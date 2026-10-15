@@ -157,7 +157,7 @@
    "solves": "Training a large model being seen as out of reach.",
    "value": "The cheapest complete \"train your first model\" experience.",
    "who": "Beginners, students, and hands-on trainers.",
-   "desc": "Train a 64M-parameter LLM from scratch in just 2 hours. 大道至简.",
+   "desc": "Train a 64M-parameter LLM from scratch in just 2 hours.",
    "lang": "Python"
   },
   "heygen-com/hyperframes": {
@@ -177,7 +177,7 @@
    "solves": "People who do not write code still want to build agent flows.",
    "value": "A representative low-code agent builder; note the README has announced the repo is archived, as pure visual orchestration is being split off by the \"skills plus terminal agents\" paradigm.",
    "who": "Low-code enthusiasts and rapid prototypers (for new projects, look at its successor).",
-   "desc": "Build AI Agents, Visually.（仓库已宣布归档，详见 Future of Flowise 讨论）",
+   "desc": "Build AI Agents, Visually. (The repository has been archived; see the \"Future of Flowise\" discussion.)",
    "lang": "TypeScript"
   },
   "vectorize-io/hindsight": {
@@ -248,7 +248,7 @@
    "value": "A classic project-based learning resource.",
    "who": "Students and job seekers.",
    "desc": "500 AI/ML/DL/CV/NLP projects with code.",
-   "lang": "—"
+   "lang": ""
   },
   "tashfeenahmed/freellmapi": {
    "section": "AI",
@@ -548,7 +548,7 @@
    "value": "A skill index for the local assistant ecosystem.",
    "who": "OpenClaw users.",
    "desc": "The awesome collection of OpenClaw skills. 5,400+ skills filtered and categorized.",
-   "lang": "—"
+   "lang": ""
   },
   "K-Dense-AI/scientific-agent-skills": {
    "section": "SKILL",
@@ -598,7 +598,7 @@
    "value": "A quality floor of \"hand-picked, not AI-slop.\"",
    "who": "People who only want high-quality skills.",
    "desc": "A curated collection of official agent skills from leading dev teams and the community.",
-   "lang": "—"
+   "lang": ""
   },
   "vercel-labs/skills": {
    "section": "SKILL",

@@ -8,10 +8,9 @@ __pycache__/
 
 # Generated reports (the filename carries a timestamp)
 AI-Skills-Trending_Report_*.html
-GitHub热门榜整理_*.html
 
-# Packaging output (rebuildable from the four core files)
-GitHub热门榜报告生成器_发布包.zip
+# Packaging output (rebuildable from the core files)
+*.zip
 
 # ---- third-party data, deliberately not tracked ----
 # READMEs fetched from other repositories (copyright stays with their authors)
