@@ -1,0 +1,674 @@
+{
+ "projects": {
+  "morluto/rea": {
+   "section": "AI",
+   "what": "REA（Reverse Engineer Anything）：面向 AI agent 的逆向工程 MCP 工具 + 技能。",
+   "can": "让 agent 在无源码情况下分析二进制、JS/Electron/.NET 应用与网站行为，解释原理、给出证据链并复刻功能；可联动 Hopper/Ghidra/IDA，本地运行。",
+   "solves": "竞品拆解、安全研究、老旧系统维护中\"没有源码就无从下手\"。",
+   "value": "把资深逆向工程师数天的工作压缩成几轮对话；日榜单日新增 5.5 万星。",
+   "who": "安全研究员、逆向工程师、要做竞品拆解的产品与工程团队。",
+   "desc": "Reverse engineer anything with agents, from app behavior down to native binaries.",
+   "lang": "TypeScript"
+  },
+  "Significant-Gravitas/AutoGPT": {
+   "section": "AI",
+   "what": "自主 AI agent 平台的标志性开源项目，现定位\"能交付工作的 agent\"。",
+   "can": "描述目标，AutoGPT 自动构建 agent、运行任务并汇报结果；提供云端平台（agpt.co）与自托管两种用法。",
+   "solves": "不会编排 agent 工作流的人也想用上自主 agent。",
+   "value": "agent 概念的启蒙项目，生态与社区成熟，是学习 agent 架构的活教材。",
+   "who": "想快速搭建自动任务的个人与团队、agent 学习者。",
+   "desc": "AutoGPT is the vision of accessible AI for everyone, to use and to build.",
+   "lang": "Python"
+  },
+  "f/prompts.chat": {
+   "section": "AI",
+   "what": "世界最大的开源提示词库，前身即著名的 Awesome ChatGPT Prompts。",
+   "can": "分享、发现、收藏适用于 ChatGPT / Claude / Gemini / Llama / Mistral 等各模型的提示词；HuggingFace 上有配套数据集。",
+   "solves": "提示词质量参差、优秀模板散落各处、重复造轮子。",
+   "value": "提示词工程领域的事实标准社区。",
+   "who": "所有与大模型打交道的人。",
+   "desc": "The world's largest open-source prompt library for AI (formerly Awesome ChatGPT Prompts).",
+   "lang": "HTML"
+  },
+  "anthropics/claude-code": {
+   "section": "AI",
+   "what": "Anthropic 官方的 agentic 编码工具，运行在终端里。",
+   "can": "理解整个代码库，执行常规任务、解释复杂代码、处理 git 工作流；同时是 skills / plugins 生态的核心宿主。",
+   "solves": "让 AI 从\"补全下一行\"进阶为\"对一个完整任务负责\"。",
+   "value": "2026 年编码 agent 的标杆之一，大量周边生态（技能、插件、记忆、审计）围绕它生长。",
+   "who": "全体开发者，尤其是终端重度用户。",
+   "desc": "Claude Code is an agentic coding tool that lives in your terminal.",
+   "lang": "TypeScript"
+  },
+  "rasbt/LLMs-from-scratch": {
+   "section": "AI",
+   "what": "Sebastian Raschka《Build a Large Language Model (From Scratch)》一书官方代码库。",
+   "can": "从零实现、预训练、微调一个 GPT 类模型，并加载大模型权重做微调，全程配图讲解。",
+   "solves": "只会调 API、不懂模型内部机制。",
+   "value": "LLM 原理教学的事实标准项目。",
+   "who": "想真正理解模型内部的学习者、转型 AI 的工程师。",
+   "desc": "Implement a ChatGPT-like LLM in PyTorch from scratch, step by step.",
+   "lang": "Jupyter Notebook"
+  },
+  "paperclipai/paperclip": {
+   "section": "AI",
+   "what": "开源多 agent 编排系统（Node.js 服务 + React UI），口号是\"如果 OpenClaw 是员工，Paperclip 就是公司\"。",
+   "can": "像管公司一样管 agent 团队：定业务目标、雇角色（CEO/CTO/工程师/设计师/市场…）、设预算、在仪表盘上跟踪工作与成本；适配 OpenClaw、Claude Code、Codex、Cursor、Gemini CLI、Pi、Hermes 等。",
+   "solves": "单个 agent 之外，如何组织\"一队 agent\"完成业务。",
+   "value": "把 agent 管理抽象为组织架构 + 预算 + 治理问题；月榜新增 2.1 万星。",
+   "who": "想用 agent 团队跑业务的创业者与小团队。",
+   "desc": "The open-source app everyone uses to manage agents at work.",
+   "lang": "TypeScript"
+  },
+  "nexu-io/open-design": {
+   "section": "AI",
+   "what": "首个\"协作式 AI 设计 agent 工作区\"（Apache 2.0）。",
+   "can": "从一份 brief 出发，用编码 agent 或 OpenDesign Cloud 生成遵循设计系统的原型；团队反馈后 agent 在同一项目中继续迭代；对外开放 skills、设计模板、设计系统与插件。",
+   "solves": "AI 生成的设计难以落进团队既有设计体系。",
+   "value": "把\"设计系统\"变成 agent 可执行、可协作的资产。",
+   "who": "设计师、前端与产品团队。",
+   "desc": "The 1st Collaborative AI Design Agent Workspace. Local-first and open source.",
+   "lang": "TypeScript"
+  },
+  "thedotmack/claude-mem": {
+   "section": "AI",
+   "what": "为 Claude Code 打造的持久记忆压缩系统。",
+   "can": "自动捕获会话中的文件编辑、git 操作、任务、错误与用户决策，压缩入库；上下文压缩后通过 FTS5/BM25 按需检索恢复，\"正好接着上次干\"；不 continue 即清库，干净利落。",
+   "solves": "长会话里 agent\"失忆\"——忘了在改哪个文件、任务进行到哪。",
+   "value": "让 agent 拥有跨会话连续记忆；周榜新增 3,587 星。",
+   "who": "Claude Code 重度用户。",
+   "desc": "Persistent memory compression system built for Claude Code.",
+   "lang": "TypeScript"
+  },
+  "hacksider/Deep-Live-Cam": {
+   "section": "AI",
+   "what": "一键实时换脸 / 视频深度伪造工具。",
+   "can": "仅凭单张图片即可实时换脸、生成视频，面向 AI 生成媒体行业；内置不当内容检查（涉性/暴力等）。",
+   "solves": "低门槛的虚拟角色动画与内容创作。",
+   "value": "效率与风险并存：创作利器，但必须守住伦理与法律边界。",
+   "who": "视频创作者（合规使用）。",
+   "desc": "Real-time face swap and video deepfake with a single image.",
+   "lang": "Python"
+  },
+  "OpenHands/OpenHands": {
+   "section": "AI",
+   "what": "自托管的编码 agent 控制中心（原 All-Hands 团队项目）。",
+   "can": "在本地、远程与云后端运行 OpenHands、Claude Code、Codex、Gemini、Pi、OpenCode 等 ACP 兼容 agent；Agent Canvas 把分散的编码 agent 变成\"永远在线的工程团队\"，可自动化生成 issue 修复等日常任务。",
+   "solves": "agent 数量变多后缺乏统一控制面与后端管理。",
+   "value": "研发流程 agent 化的基础设施。",
+   "who": "想把 agent 纳入研发流程的团队。",
+   "desc": "The self-hosted developer control center for coding agents and automations.",
+   "lang": "TypeScript"
+  },
+  "Egonex-AI/Understand-Anything": {
+   "section": "AI",
+   "what": "Claude Code 插件：把任意代码库 / 知识库变成可交互知识图谱。",
+   "can": "多 agent 流水线分析项目，为每个文件、函数、类、依赖建图；交互式仪表盘 + 自动架构导览 + 模糊/语义搜索；也支持把 Karpathy 式 wiki 知识库图谱化。",
+   "solves": "新人面对 20 万行代码不知从何读起。",
+   "value": "\"先看全貌再动手\"，把阅读理解代码的成本降到最低。",
+   "who": "接手新代码库的开发者、技术管理者。",
+   "desc": "Turn any codebase, knowledge base, or docs into an interactive knowledge graph.",
+   "lang": "TypeScript"
+  },
+  "microsoft/AI-For-Beginners": {
+   "section": "AI",
+   "what": "微软官方 12 周 24 课 AI 入门课程。",
+   "can": "理论 + 实践 + 测验 + 实验的体系化入门路径，多语言支持。",
+   "solves": "AI 零基础无从下手。",
+   "value": "免费、体系化、持续更新的入门标准教材。",
+   "who": "学生与转行者。",
+   "desc": "12 Weeks, 24 Lessons, AI for All!",
+   "lang": "Jupyter Notebook"
+  },
+  "rohitg00/ai-engineering-from-scratch": {
+   "section": "AI",
+   "what": "免费开源（MIT）的\"AI 工程从零开始\"大学课程。",
+   "can": "528 节课、20 个阶段：亲手实现模型内部机制、检索管线与 agent 运行时，边写边测边复盘；支持网站、编码 agent、本地代码三种学法，含交互实验与项目挑战。",
+   "solves": "AI 知识碎片化，缺乏工程级系统训练。",
+   "value": "从\"会用 API\"到\"会造系统\"的完整桥梁；月榜新增 1.4 万星。",
+   "who": "目标成为 AI 工程师的开发者。",
+   "desc": "Learn AI Engineering! 528 lessons, 20 phases.",
+   "lang": "Python"
+  },
+  "usestrix/strix": {
+   "section": "AI",
+   "what": "开源 AI 渗透测试工具（autonomous AI hackers）。",
+   "can": "自主 agent 像真实黑客一样动态运行你的代码、发现漏洞，并生成真实 PoC 验证可利用性。",
+   "solves": "人工渗透测试覆盖不足、周期长。",
+   "value": "把安全测试从\"抽检\"变成\"全量、持续\"。",
+   "who": "安全团队、DevSecOps 流程。",
+   "desc": "Open-source AI penetration testing tool to find and fix your app vulnerabilities.",
+   "lang": "Python"
+  },
+  "debpalash/VoiceStudio": {
+   "section": "AI",
+   "what": "开源、完全本地的 ElevenLabs 替代品。",
+   "can": "语音克隆、声音设计、视频配音、听写、转录、有声书制作，支持 646 种语言；可切换引擎，本地硬件运行。",
+   "solves": "商用语音 API 贵、数据要出域。",
+   "value": "把工作室级语音能力搬到自己机器上；月榜新增 3.6 万星，本月最大黑马之一。",
+   "who": "内容创作者、播客与有声书制作者。",
+   "desc": "Open-source, fully-local ElevenLabs alternative — 646 languages.",
+   "lang": "Python"
+  },
+  "jingyaogong/minimind": {
+   "section": "AI",
+   "what": "极简大模型训练项目，宗旨\"大道至简\"。",
+   "can": "2 小时从零训练一个 64M 参数的 GPT，代码极短但覆盖数据处理、预训练、对话微调全流程。",
+   "solves": "训练大模型被视为高不可攀。",
+   "value": "成本最低的\"训练第一个模型\"完整体验。",
+   "who": "初学者、学生、想动手的训练者。",
+   "desc": "Train a 64M-parameter LLM from scratch in just 2 hours. 大道至简.",
+   "lang": "Python"
+  },
+  "heygen-com/hyperframes": {
+   "section": "AI",
+   "what": "HeyGen 出品的开源\"HTML 即视频\"框架。",
+   "can": "把 HTML/CSS/媒体/可定位动画确定性地渲染成 MP4；本地 CLI、AI 编码 agent（技能插件）或托管工作流皆可使用；提供原生 Mac/Linux 应用与 Studio。",
+   "solves": "程序化视频制作门槛高、agent 做视频缺乏确定管线。",
+   "value": "用前端技能做视频，且为 agent 工作流原生设计。",
+   "who": "前端开发者、agent 视频工作流构建者。",
+   "desc": "Write HTML. Render video. Built for agents.",
+   "lang": "TypeScript"
+  },
+  "FlowiseAI/Flowise": {
+   "section": "AI",
+   "what": "可视化拖拽式 AI agent / 工作流搭建工具。",
+   "can": "拖拽节点构建 agent、RAG 与工具链流程，可自托管部署。",
+   "solves": "不会写代码的人也想搭 agent 流程。",
+   "value": "低代码 agent 搭建的代表作；注意 README 已宣布仓库归档——纯可视化编排正被\"技能 + 终端 agent\"新范式分流。",
+   "who": "低代码爱好者、快速原型验证者（新项目建议关注其继任方案）。",
+   "desc": "Build AI Agents, Visually.（仓库已宣布归档，详见 Future of Flowise 讨论）",
+   "lang": "TypeScript"
+  },
+  "vectorize-io/hindsight": {
+   "section": "AI",
+   "what": "让 agent\"学会\"而不只是\"记住\"的 agent 记忆系统（含论文）。",
+   "can": "记忆类型化 + retain/recall/reflect 三操作 + 观测、心理模型与知识页；LLM wrapper 两行接入、MCP server、多平台集成；LongMemEval 基准 SOTA（第三方复现）。",
+   "solves": "RAG / 知识图谱式记忆在长期任务上表现不足。",
+   "value": "agent 长期记忆的新基线；月榜新增 2.6 万星。",
+   "who": "agent 应用开发者。",
+   "desc": "Hindsight: Agent Memory That Learns.",
+   "lang": "Python"
+  },
+  "alibaba/open-code-review": {
+   "section": "AI",
+   "what": "阿里集团开源的代码评审工具。",
+   "can": "混合架构的代码评审：安全、快速，经阿里内部规模验证；OpenSSF Best Practices Gold；npm 分发、跨平台。",
+   "solves": "大仓场景下评审质量与效率难以兼得。",
+   "value": "大厂工程实践的外溢；月榜新增 2.4 万星。",
+   "who": "中大型研发团队。",
+   "desc": "Secure, fast, efficient, battle-tested at Alibaba scale. Hybrid architecture code review.",
+   "lang": "Go"
+  },
+  "Kong/kong": {
+   "section": "AI",
+   "what": "云原生、平台无关的 API · AI · MCP 网关。",
+   "can": "代理、路由、负载均衡、健康检查、认证之外，提供 LLM 流量治理（限流、可观测、AI 流量管理），插件生态丰富。",
+   "solves": "LLM API 调用缺乏治理、成本与安全不可控。",
+   "value": "AI 流量的\"海关\"，MCP 时代的网关标配。",
+   "who": "平台 / 基础设施团队。",
+   "desc": "Cloud-native, platform-agnostic API / AI / MCP Gateway.",
+   "lang": "Lua"
+  },
+  "JustVugg/colibri": {
+   "section": "AI",
+   "what": "纯 C 的极简推理引擎，\"tiny engine, immense model\"。",
+   "can": "专家流式加载：8GB 内存即可运行 744B MoE（GLM-5.2/5.3、Kimi K3、DeepSeek V4 系列、Qwen3 系列等 13 个引擎），无需 GPU，最低 8GB 内存 + 22GB 磁盘。",
+   "solves": "前沿开源模型对硬件的暴政。",
+   "value": "\"老笔记本跑巨模型\"，端侧推理民主化。",
+   "who": "没有高端显卡但想跑前沿模型的玩家。",
+   "desc": "Run frontier MoE models on hardware you already own — pure C, zero deps, experts streamed.",
+   "lang": "C"
+  },
+  "lyogavin/airllm": {
+   "section": "AI",
+   "what": "极致省显存的推理 / 训练库。",
+   "can": "分层流式加载：70B 模型跑在单张 4GB 显卡（无需量化/蒸馏/剪枝），Kimi K3（2.8T）压进 4GB 以内、DeepSeek-V3（671B）约 12GB；2026/09 起支持小显存训练（125B 在 6GB 训练）。",
+   "solves": "显存即阶级，消费级显卡被挡在门外。",
+   "value": "让大模型民主化再进一步。",
+   "who": "显存受限的学生与研究者。",
+   "desc": "70B LLM inference with single 4GB GPU — no quantization needed.",
+   "lang": "Jupyter Notebook"
+  },
+  "ItzCrazyKns/Vane": {
+   "section": "AI",
+   "what": "隐私优先的 AI 问答引擎，完全运行在自有硬件。",
+   "can": "聚合互联网知识 + Ollama 本地模型 / OpenAI、Claude、Gemini、Groq 等云 API；速度 / 平衡 / 质量三档搜索模式。",
+   "solves": "用 AI 搜索就要交出全部隐私。",
+   "value": "自托管的 Perplexity 替代。",
+   "who": "注重隐私的个人与团队。",
+   "desc": "Privacy-focused AI answering engine that runs entirely on your own hardware.",
+   "lang": "TypeScript"
+  },
+  "ashishpatel26/500-AI-Machine-learning-Deep-learning-Computer-vision-NLP-Projects-with-code": {
+   "section": "AI",
+   "what": "500 个 AI / ML / DL / CV / NLP 项目合集（带代码）。",
+   "can": "按图索骥地学习各类 AI 项目实现。",
+   "solves": "想练手却找不到合适项目。",
+   "value": "经典的项目式学习资源库。",
+   "who": "学生、求职者。",
+   "desc": "500 AI/ML/DL/CV/NLP projects with code.",
+   "lang": "—"
+  },
+  "tashfeenahmed/freellmapi": {
+   "section": "AI",
+   "what": "免费 LLM API 聚合网关。",
+   "can": "把 34 家提供商的免费额度、635 个端点聚合成一个 OpenAI 兼容 /v1 接口；智能路由择优、供应商故障自动转移、按 key 限额追踪；密钥加密存储，提供 Docker 自托管与移动端。",
+   "solves": "免费 token 散落各处、超额即断供。",
+   "value": "每月约 74 亿免费 token 的统一入口与管家。",
+   "who": "想零成本用上多模型的开发者。",
+   "desc": "7.4B tokens/month. 34 free LLM providers. 635 free endpoints. One OpenAI-compatible endpoint.",
+   "lang": "TypeScript"
+  },
+  "explosion/spaCy": {
+   "section": "AI",
+   "what": "工业级自然语言处理库。",
+   "can": "分词、词性标注、命名实体识别、依存句法等生产级流水线，训练与推理兼顾。",
+   "solves": "生产环境需要稳定快速的 NLP 能力。",
+   "value": "NLP 工程基石，学术界工业界通用。",
+   "who": "NLP 工程师、数据科学家。",
+   "desc": "Industrial-strength NLP in Python.",
+   "lang": "Python"
+  },
+  "Tencent/WeKnora": {
+   "section": "AI",
+   "what": "腾讯开源的 LLM 知识框架（微信团队出品）。",
+   "can": "RAG 语义检索 + agent 多步任务 + wiki 知识组织三合一，全部构建在同一知识底座上；面向企业文档理解与问答；有 Chrome 扩展与 ClawHub 技能形态。",
+   "solves": "企业文档沉睡、传统检索不准。",
+   "value": "大厂开箱即用的知识中台；月榜新增 1.1 万星。",
+   "who": "企业知识管理团队。",
+   "desc": "Open-source LLM knowledge platform: turn raw documents into a queryable RAG, an autonomous agent, and a wiki.",
+   "lang": "Go"
+  },
+  "trycua/cua": {
+   "section": "AI",
+   "what": "给 agent\"发电脑\"的 computer-use 2.0 全家桶。",
+   "can": "Cua Spaces 给 agent 完整桌面、Cua Driver 跨 OS 桌面自动化、Lume 本地 macOS/Linux VM、CUA-S1 决策模型、Cua Bench 评测——覆盖训练、运行、评估全链路。",
+   "solves": "agent 只会写代码，不会点按钮。",
+   "value": "computer-use agent 的全栈工具箱。",
+   "who": "GUI agent 研究者与开发者。",
+   "desc": "Give AI agents computers they can use. Scale computer-use 2.0.",
+   "lang": "Rust"
+  },
+  "mksglu/context-mode": {
+   "section": "AI",
+   "what": "专治 agent\"上下文肥胖\"的 MCP server（Hacker News 头条项目）。",
+   "can": "四管齐下：沙盒化工具输出（315KB → 5.4KB，降 98%）、SQLite+FTS5 会话连续性（压缩后按需恢复）、\"think in code\" 范式（让 agent 写脚本算而不是把数据读进上下文）、17 个客户端 + OpenClaw 网关强制路由。",
+   "solves": "MCP 工具调用把上下文窗口撑爆，一压缩 agent 就忘事。",
+   "value": "上下文工程的关键一环，日榜/月榜双榜常客。",
+   "who": "被上下文窗口困扰的 agent 重度用户。",
+   "desc": "Context window optimization for AI coding agents. Sandboxes tool output (98% reduction).",
+   "lang": "TypeScript"
+  },
+  "storytold/artcraft": {
+   "section": "AI",
+   "what": "\"艺术家的 IDE\"，面向交互式 AI 图像与视频创作。",
+   "can": "2D 画布合成 + 3D 场景编排 + 自选模型；把 prompting 变成 crafting，精确控制构图、角色一致性与机位，结果可重复。",
+   "solves": "纯 prompt 无法精确控制创意产出。",
+   "value": "把创意控制权还给艺术家；日榜新增 4,081 星。",
+   "who": "艺术家、设计师、电影人。",
+   "desc": "ArtCraft is an IDE for interactive AI image and video creation.",
+   "lang": "Rust"
+  },
+  "earthtojake/text-to-cad": {
+   "section": "AI",
+   "what": "给 agent 的 CAD 超能力（插件 / 技能）。",
+   "can": "自然语言生成 STEP / GLB / STL / 3MF 三维模型，附带可制造性（DFM）检查、工程图生成，并连接 3D 打印、钣金与 CNC 加工服务；基于 build123d + Open CASCADE。",
+   "solves": "工程设计 / 制造之间的建模门槛。",
+   "value": "自然语言直达可制造模型。",
+   "who": "机械设计师、创客与制造团队。",
+   "desc": "Give your agent CAD superpowers.",
+   "lang": "Python"
+  },
+  "NVIDIA/OpenShell": {
+   "section": "AI",
+   "what": "NVIDIA 出品的 agent 舰队安全运行时。",
+   "can": "内核级沙箱（文件 / 系统调用 / 网络逐条策略执行）+ 凭证按端点注入（agent 永远看不到真实密钥）+ 策略变更前形式化验证；支持 K8s Helm 部署与多种沙箱技术。",
+   "solves": "agent 需要读文件、装包、调 API，但不能给无限权限。",
+   "value": "企业规模化运行 agent 的安全底座。",
+   "who": "企业平台与安全团队。",
+   "desc": "OpenShell is the safe, private runtime for fleets of autonomous AI agents.",
+   "lang": "Rust"
+  },
+  "google/artemis": {
+   "section": "AI",
+   "what": "Google 的 Android 自动化 agent（MCP 原生服务）。",
+   "can": "让 AI 助手像人一样操作真实手机（多模态模型可选：Gemini / Claude / GPT / Qwen-VL），驱动地图、YouTube 等真实应用完成任务；AndroidWorld 基准 99%+ SOTA。",
+   "solves": "传统移动自动化脚本脆弱、易失效。",
+   "value": "真机级移动 agent 的标杆实现。",
+   "who": "移动测试与自动化团队。",
+   "desc": "ARTEMIS turns natural-language instructions into reliable Android automation.",
+   "lang": "Python"
+  },
+  "tester-army/e2e": {
+   "section": "AI",
+   "what": "TesterArmy 出品的开源 AI 测试框架。",
+   "can": "面向 Web 与移动端的下一代 e2e 测试，agent 驱动编写与维护用例。",
+   "solves": "传统 e2e 测试编写成本高、选择器易碎。",
+   "value": "测试 agent 化的代表项目；周榜新增 4,426 星。",
+   "who": "测试团队、QA 工程师。",
+   "desc": "Next generation e2e testing framework for web and mobile apps.",
+   "lang": "TypeScript"
+  },
+  "TencentCloud/Octop": {
+   "section": "AI",
+   "what": "腾讯云开源自托管 AI 助手。",
+   "can": "多用户、多 agent 的个人 / 团队助手，本地部署、数据自持。",
+   "solves": "云端助手的数据与隐私顾虑。",
+   "value": "大厂背景的自托管助手方案；月榜新增 7,517 星。",
+   "who": "想自建助手的个人与团队。",
+   "desc": "A smarter, self-hosted AI assistant — multi-user, multi-agent.",
+   "lang": "Python"
+  },
+  "agent-substrate/substrate": {
+   "section": "AI",
+   "what": "K8s 上的 agent 沙箱运行时（Apache 2.0）。",
+   "can": "百万级沙箱调度、10 倍于标准容器运行时的密度、亚 500ms 恢复、每秒 500+ 次挂起/恢复；支持 microVM 与 gVisor，零信任内核与网络隔离；为 RL 场景的 agent-推理-训练闭环优化。",
+   "solves": "agent 运行时规模化与隔离的矛盾。",
+   "value": "\"agent 时代的操作系统内核\"雏形。",
+   "who": "agent 基础设施提供商、平台团队。",
+   "desc": "A secure-by-default runtime for running millions of agent sandboxes on Kubernetes.",
+   "lang": "Go"
+  },
+  "nanocoai/nanoclaw": {
+   "section": "AI",
+   "what": "OpenClaw 的轻量容器化替代。",
+   "can": "在容器中运行个人 AI 助手，兼顾 OpenClaw 式体验与安全隔离。",
+   "solves": "本地助手直接跑在宿主机上的安全风险。",
+   "value": "安全优先的助手运行形态。",
+   "who": "重视隔离的 OpenClaw 用户。",
+   "desc": "A lightweight alternative to OpenClaw that runs in containers for security.",
+   "lang": "TypeScript"
+  },
+  "code-yeongyu/oh-my-openagent": {
+   "section": "AI",
+   "what": "OmO（oh-my-openagent）：个人 agent 运行时 / CLI，基于 senpi（pi 的分支）。",
+   "can": "一条 omo 命令把 token 变成成品工作：跨万级资料的研究、汇报 deck、后端、前端与代码；内置记忆系统、CodeMode、多模型支持，并可一键迁移 OpenCode / LazyCodex 的 provider keys、MCP、skills 配置。",
+   "solves": "通用 agent 工具配置碎片化、切换成本高。",
+   "value": "把 coding agent 封装成\"随叫随到的全能外包\"。",
+   "who": "希望一个 CLI 干完活的开发者。",
+   "desc": "OmO: one omo command that turns your tokens into finished work.",
+   "lang": "TypeScript"
+  },
+  "XingangPan/DragGAN": {
+   "section": "AI",
+   "what": "SIGGRAPH 2023 的拖点式图像编辑官方代码。",
+   "can": "在生成流形上通过拖拽控制点精确改变图像中物体的姿态、形状与布局。",
+   "solves": "生成式图像编辑缺乏直观、精确的控制手段。",
+   "value": "可控生成的经典研究工作。",
+   "who": "CV 研究者、生成式 AI 从业者。",
+   "desc": "Drag Your GAN: Interactive Point-based Manipulation on the Generative Image Manifold (SIGGRAPH 2023).",
+   "lang": "Python"
+  },
+  "mattpocock/skills": {
+   "section": "SKILL",
+   "what": "Matt Pocock（Total TypeScript 作者）日常真在用的工程技能集，\"给真实工程师的技能\"。",
+   "can": "小而可组合、适配任何模型的 agent 技能，覆盖工程与生产力场景；Claude Code / Codex / Copilot / Gemini CLI 均可安装，可整库或按需拷贝进项目自行修改。",
+   "solves": "GSD、BMAD、Spec-Kit 等流程托管式方案拿走控制权，流程出 bug 难以定位。",
+   "value": "把\"资深工程师的做事方式\"直接交给 agent，控制权留给人；29 万星，技能版块总星第一。",
+   "who": "厌倦 vibe coding、要工程确定性的开发者。",
+   "desc": "Skills For Real Engineers. Straight from my .agents directory.",
+   "lang": "Shell"
+  },
+  "affaan-m/ECC": {
+   "section": "SKILL",
+   "what": "ECC（agent harness 操作系统 / 性能优化系统）。",
+   "can": "技能、直觉、记忆、安全、成本一体化优化 harness；提供 npm 包（ecc-universal、ecc-agentshield）与 GitHub App；README 覆盖 15 种语言（含简体中文）。",
+   "solves": "agent 产出质量往往由 harness（而非模型）决定，却缺少系统级调优方案。",
+   "value": "把 harness 调优产品化、体系化；月榜新增 2.3 万星。",
+   "who": "想把 agent 系统整体调优的团队。",
+   "desc": "The agent harness performance optimization system. Skills, instincts, memory, security.",
+   "lang": "JavaScript"
+  },
+  "anthropics/skills": {
+   "section": "SKILL",
+   "what": "Anthropic 官方 Agent Skills 公开仓库。",
+   "can": "技能 = 含 SKILL.md 的文件夹（指令 + 脚本 + 资源），覆盖创意/设计、开发技术、企业沟通与文档（docx/pdf/pptx/xlsx 为 Claude 文档能力的同源实现）；含 Agent Skills 规范与模板；可作为 Claude Code 插件市场安装。",
+   "solves": "官方标准参考实现从哪来、技能该怎么写。",
+   "value": "技能生态的\"宪法 + 官方示例库\"。",
+   "who": "所有要写技能、理解标准的人。",
+   "desc": "Public repository for Agent Skills.",
+   "lang": "Python"
+  },
+  "DietrichGebert/ponytail": {
+   "section": "SKILL",
+   "what": "让 agent 像\"最懒的资深工程师\"一样思考的技能（Ponytail）。",
+   "can": "只写任务所需代码，但不砍校验、错误处理、安全与无障碍；v5 基准：代码 -53%、时间 -41%、成本 -26%、token -45%，98% 风险逻辑带测试（无技能基线 68%）；支持 20 个 agent。",
+   "solves": "agent 写的代码啰嗦、token 烧得凶、安全隐患多。",
+   "value": "用基准数据说话的\"反 slop\"技能。",
+   "who": "被 agent 代码量与成本困扰的人。",
+   "desc": "Makes your AI agent think like the laziest senior dev in the room.",
+   "lang": "JavaScript"
+  },
+  "addyosmani/agent-skills": {
+   "section": "SKILL",
+   "what": "Addy Osmani 的生产级工程技能库（25 个技能 + 9 个斜杠命令）。",
+   "can": "/spec /plan /build /test /constraints /review /webperf /code-simplify /ship 覆盖开发全生命周期，spec 先行、TDD、质量门禁固化；npx skills add 一键安装，支持 70+ agent。",
+   "solves": "agent 辅助开发缺乏流程纪律与质量门禁。",
+   "value": "把软件工程生命周期教给 agent。",
+   "who": "追求规范驱动开发的团队。",
+   "desc": "Production-grade engineering skills for AI coding agents.",
+   "lang": "JavaScript"
+  },
+  "Leonxlnx/taste-skill": {
+   "section": "SKILL",
+   "what": "让 agent\"有品位\"的前端设计技能（Anti-slop）。",
+   "can": "给 agent 艺术方向、开放档案中的真实图片素材（含署名）与真实浏览器自检能力，输出编辑级页面而非\"平均脸\"落地页；配套桌面应用 TasteCode（内置设计 agent）。",
+   "solves": "AI 生成的网页\"能跑但丑\"，缺乏设计判断。",
+   "value": "把设计审美变成可安装的能力。",
+   "who": "前端工程师、设计师。",
+   "desc": "Agent skills that give coding agents taste: art direction, reference images, browser self-check.",
+   "lang": "JavaScript"
+  },
+  "tt-a1i/archify": {
+   "section": "SKILL",
+   "what": "把一切变成交互式可视化的技能（Archify）。",
+   "can": "对 agent 说一句话，生成可探索、可定制、可分享的交互 HTML 图；无需仓库，从一句描述或整仓代码开始；支持架构图、旅行计划、学习地图等场景；skills.sh 安装量 13 万+。",
+   "solves": "架构图 / 计划 / 知识地图制作耗时、难维护。",
+   "value": "所想即所见，图表随对话演进。",
+   "who": "需要频繁做图汇报协作的人。",
+   "desc": "Turn any idea, plan, or codebase into a beautiful interactive diagram.",
+   "lang": "JavaScript"
+  },
+  "ComposioHQ/awesome-claude-skills": {
+   "section": "SKILL",
+   "what": "1000+ 个生产可用 Claude 技能与插件的精选清单。",
+   "can": "跨 Claude.ai / Claude Code / Codex / Cursor / Gemini CLI 等分类导航；配套 Composio MCP Gateway，用单一 MCP 端点连接 1000+ 应用（带认证、审计、权限控制）。",
+   "solves": "技能越来越多，找不到合适的。",
+   "value": "技能生态的黄页 + 真实执行连接器。",
+   "who": "在技能海洋里寻宝的 agent 用户。",
+   "desc": "A curated list of 1000+ production-ready Claude Skills and Plugins.",
+   "lang": "Python"
+  },
+  "shanraisshan/claude-code-best-practice": {
+   "section": "SKILL",
+   "what": "Claude Code 最佳实践总库。",
+   "can": "subagents / commands / skills / hooks / MCP servers / plugins / settings / memory / checkpointing 全要素的\"概念 + 最佳实践 + 落地实现\"三件套，以徽标区分实践等级。",
+   "solves": "Claude Code 会用但用不成体系。",
+   "value": "把个人技巧沉淀为团队规范。",
+   "who": "要把 Claude Code 工程化的团队。",
+   "desc": "From vibe coding to agentic engineering - practice makes claude perfect.",
+   "lang": "HTML"
+  },
+  "ayghri/i-have-adhd": {
+   "section": "SKILL",
+   "what": "ADHD 友好输出技能。",
+   "can": "先给答案、步骤编号、删除\"希望有帮助\"式客套，agent 输出瞬间变清爽（无需真有 ADHD）。",
+   "solves": "被 agent 的长篇大论和废话淹没。",
+   "value": "一行安装、体验立变的技能。",
+   "who": "所有嫌 agent 话多的人。",
+   "desc": "ADHD-friendly outputs. No ADHD diagnosis needed!",
+   "lang": "Python"
+  },
+  "blader/humanizer": {
+   "section": "SKILL",
+   "what": "去\"AI 味\"的写作技能（Humanizer）。",
+   "can": "基于维基百科\"AI 写作痕迹\"指南检查 26 种模式（不是 X 而是 Y、一句话收尾、假装深刻…）并原意不改地改写；盲测 16:0 胜出；明示目标不是骗过 AI 检测器。",
+   "solves": "AI 文案一眼假、公开发布尴尬。",
+   "value": "文风人性化的即战力。",
+   "who": "内容创作者、运营、文档写作者。",
+   "desc": "Makes AI-written text sound like a person wrote it, without changing what it says.",
+   "lang": "Python"
+  },
+  "hesreallyhim/awesome-claude-code": {
+   "section": "SKILL",
+   "what": "Claude Code 资源超级精选清单。",
+   "can": "命令、技能、hooks、MCP、工作流、技巧一网打尽。",
+   "solves": "Claude Code 生态资源分散。",
+   "value": "社区公认的优质导航。",
+   "who": "Claude Code 玩家。",
+   "desc": "A hand-picked collection of the finest resources for Claude Code.",
+   "lang": "Python"
+  },
+  "cathrynlavery/diagram-design": {
+   "section": "SKILL",
+   "what": "面向 agent 的编辑级图表设计技能。",
+   "can": "44 种图表类型、自包含 HTML + SVG 输出、适配 Claude Code / Codex / Copilot / Cursor / Factory Droid / Pi；风格克制（无阴影、无 Mermaid 味）；日/周/月三榜常客。",
+   "solves": "agent 生成的图\"能看但不能发\"。",
+   "value": "出版级图表能力直接装进 agent。",
+   "who": "要对外发表图表的设计师与开发者。",
+   "desc": "Editorial diagram design for Claude Code, Codex, GitHub Copilot, Cursor, Factory Droid, and Pi.",
+   "lang": "HTML"
+  },
+  "coreyhaines31/marketingskills": {
+   "section": "SKILL",
+   "what": "营销 agent 技能库（Corey Haines）。",
+   "can": "转化优化、文案、SEO、分析、增长工程等技能；以 product-marketing 为地基层层组合；支持连接营销账号（只读优先、最小授权）；MIT。",
+   "solves": "营销领域知识难以系统地教给 agent。",
+   "value": "把增长方法论技能化、可复用。",
+   "who": "技术型市场人、创始人。",
+   "desc": "Marketing skills for Claude Code and AI agents. CRO, copywriting, SEO, analytics.",
+   "lang": "JavaScript"
+  },
+  "VoltAgent/awesome-openclaw-skills": {
+   "section": "SKILL",
+   "what": "OpenClaw 技能大清单。",
+   "can": "来自 ClawHub 注册表的 5300+ 社区技能分类导航，支持 CLI 安装。",
+   "solves": "OpenClaw 技能生态缺乏检索入口。",
+   "value": "本地助手生态的技能索引。",
+   "who": "OpenClaw 用户。",
+   "desc": "The awesome collection of OpenClaw skills. 5,400+ skills filtered and categorized.",
+   "lang": "—"
+  },
+  "K-Dense-AI/scientific-agent-skills": {
+   "section": "SKILL",
+   "what": "177 个科研技能（K-Dense）。",
+   "can": "覆盖生物信息、化学信息学、蛋白组、数据可视化等；遵循 agentskills.io 开放标准并兼容多 harness；配套 K-Dense BYOK 本地\"AI 科学家\"（40+ 模型、100+ 科学数据库）。",
+   "solves": "科研工作流难以标准化复现。",
+   "value": "把领域 SOP 变成可安装技能。",
+   "who": "科研人员、实验室。",
+   "desc": "Turn any AI agent into an AI Scientist. 177 skills for research agents.",
+   "lang": "Python"
+  },
+  "sickn33/agentic-awesome-skills": {
+   "section": "SKILL",
+   "what": "2689+ 可安装 SKILL.md playbook 库 + 本地控制平面（AAS Core）。",
+   "can": "本地目录检索、agent 自选技能、plan 预览与 stack 校验（apply/recovery 尚处实验阶段）。",
+   "solves": "技能装得多但缺乏管理与预演机制。",
+   "value": "技能治理层的一次探索。",
+   "who": "想要技能控制平面的进阶玩家。",
+   "desc": "AAS Core: a library of 2,689+ installable SKILL.md playbooks with a local control plane.",
+   "lang": "Python"
+  },
+  "wshobson/agents": {
+   "section": "SKILL",
+   "what": "跨 harness 的插件 / agent / 技能 / 命令全家桶。",
+   "can": "94 个插件、202 个 agents、184 个 skills、105 条命令，同一 Markdown 源适配 Claude Code、Codex、Cursor、OpenCode、Copilot、Pi 等。",
+   "solves": "不同编码工具各自为政，资产无法复用。",
+   "value": "\"一次编写、多 harness 运行\"的技能工程实践。",
+   "who": "全家桶爱好者、多工具用户。",
+   "desc": "Plugins, agents, and skills for AI coding tools — one collection across harnesses.",
+   "lang": "Python"
+  },
+  "anthropics/financial-services": {
+   "section": "SKILL",
+   "what": "Anthropic 官方金融服务技能包。",
+   "can": "投行、股权研究、私募股权、财富管理的参考 agent / 技能 / 数据连接器；可作插件安装或经工作流引擎部署；鼓励按机构实际流程裁剪。",
+   "solves": "金融机构缺少可定制的 agent 参考样板。",
+   "value": "垂类官方参考实现。",
+   "who": "金融机构与企业服务商。",
+   "desc": "Reference agents, skills, and data connectors for financial-services workflows.",
+   "lang": "Python"
+  },
+  "VoltAgent/awesome-agent-skills": {
+   "section": "SKILL",
+   "what": "官方 + 社区 1000+ 技能的精选合集。",
+   "can": "收录真实工程团队在使用（而非批量 AI 生成）的技能，兼容 Claude Code / Codex / Antigravity / Gemini CLI / Cursor / Copilot / OpenCode 等。",
+   "solves": "技能清单鱼龙混杂、AI 垃圾泛滥。",
+   "value": "\"Hand-picked, not AI-slop\"的质量底线。",
+   "who": "只想要高质量技能的人。",
+   "desc": "A curated collection of official agent skills from leading dev teams and the community.",
+   "lang": "—"
+  },
+  "vercel-labs/skills": {
+   "section": "SKILL",
+   "what": "开放 agent 技能生态的官方 CLI（Vercel Labs 出品）。",
+   "can": "npx skills add 为 80+ agent（Claude Code、Codex、Cursor、Copilot、Cline 等）安装技能；支持 GitHub / GitLab / Azure Repos / 任意 git URL / 本地路径与私有仓库；skills use 免安装直接生成 prompt 并拉起 agent。",
+   "solves": "技能分发没有统一入口与包管理器。",
+   "value": "技能界的 npm，日榜常客。",
+   "who": "所有技能用户的底层工具。",
+   "desc": "The CLI for the open agent skills ecosystem - npx skills.",
+   "lang": "TypeScript"
+  },
+  "anthropics/knowledge-work-plugins": {
+   "section": "SKILL",
+   "what": "Anthropic 开源的 11 个知识工作插件。",
+   "can": "按角色打包技能 + 连接器 + 斜杠命令 + 子代理，让 Claude 成为岗位专家（开箱即用，可继续定制）。",
+   "solves": "通用助手不懂\"我们公司的做事方式\"。",
+   "value": "角色化定制的官方样板。",
+   "who": "知识工作者与企业团队。",
+   "desc": "Plugins that turn Claude into a specialist for your role, team, and company.",
+   "lang": "Python"
+  },
+  "alirezarezvani/claude-skills": {
+   "section": "SKILL",
+   "what": "388 个生产级技能 / 插件库。",
+   "can": "覆盖工程全场景，适配 13 种编码工具（Claude Code、Codex、Gemini CLI、Cursor、OpenClaw、Hermes、Windsurf 等）。",
+   "solves": "想一次性装齐各类技能。",
+   "value": "一站式技能仓库的代表。",
+   "who": "想快速武装 agent 的开发者。",
+   "desc": "388 production-ready Claude Code skills, plugins, and agent skills.",
+   "lang": "Python"
+  },
+  "OthmanAdi/planning-with-files": {
+   "section": "SKILL",
+   "what": "\"agent 无法忽视的规划技能\"。",
+   "can": "不是可能被忽略的 prompt，而是每轮必触发的 hook + 磁盘上的计划文件（扛得住 /clear），盲测 A/B 3/3 胜出。",
+   "solves": "agent 上下文一死，计划就丢了。",
+   "value": "用工程手段保证计划连续性。",
+   "who": "长任务 agent 用户。",
+   "desc": "The planning skill your agent cannot ignore. A hook that fires every turn.",
+   "lang": "Python"
+  },
+  "JimLiu/baoyu-skills": {
+   "section": "SKILL",
+   "what": "宝玉（知名 AI 博主）分享的日常提效技能集。",
+   "can": "npx skills add jimliu/baoyu-skills 一键安装，覆盖 Claude Code / Codex 等日常工作场景。",
+   "solves": "不知道装哪些技能入门。",
+   "value": "中文社区高信誉度的技能\"抄作业\"来源。",
+   "who": "中文开发者与 AI 爱好者。",
+   "desc": "Skills shared by Baoyu for improving daily work efficiency with AI Agents.",
+   "lang": "TypeScript"
+  },
+  "titanwings/distilly": {
+   "section": "SKILL",
+   "what": "\"经验蒸馏\"技能：把人的做事方法炼成 agent 技能。",
+   "can": "把离职同事的未竟文档、实习生的半成品、导师毕业带走的上下文——把\"人脑中的经验\"蒸馏成可复用技能，适配任意 agent。",
+   "solves": "人员流动导致组织知识与上下文清零。",
+   "value": "组织知识资产化的新路径。",
+   "who": "团队 leader、知识管理者。",
+   "desc": "Distill how they think into reusable Skills for any Agent.",
+   "lang": "Python"
+  },
+  "cursor/plugins": {
+   "section": "SKILL",
+   "what": "Cursor 官方插件规范与插件市场仓库。",
+   "can": "多插件市场清单（marketplace.json）+ 各插件独立 manifest，为热门开发工具、框架与 SaaS 提供官方插件。",
+   "solves": "编辑器扩展与 agent 插件缺乏规范。",
+   "value": "编码工具插件化的官方基础设施。",
+   "who": "Cursor 插件开发者。",
+   "desc": "Cursor plugin specification and official plugins.",
+   "lang": "TypeScript"
+  }
+ }
+}

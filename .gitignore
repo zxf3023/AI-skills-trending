@@ -1,0 +1,30 @@
+# ---- 工具元数据 ----
+.workbuddy-ai/
+
+# ---- 运行产物 ----
+__pycache__/
+*.pyc
+*.pyo
+
+# 每次运行生成的报告（文件名带时间戳）
+GitHub热门榜整理_*.html
+
+# 打包产物（可由 4 个核心文件重新打包）
+GitHub热门榜报告生成器_发布包.zip
+
+# ---- 第三方数据，不入库 ----
+# 从各仓库抓取的 README（版权归原作者）
+readmes/
+total_board_raw.json
+
+# ---- 早期数据采集 / 开发脚本（非交付物）----
+# 正式程序是 github_trending_report.py，以下仅为当初生成 kb.json 的一次性脚本。
+# 如需纳入版本管理，删掉下面这几行即可。
+build_report.py
+collect_total.py
+fetch_readmes.py
+fetch_readmes_api.py
+intro_dump.py
+parse_trending.py
+report_data.py
+rewrite_trend.py

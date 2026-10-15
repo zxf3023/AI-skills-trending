@@ -1,0 +1,15 @@
+# 行尾统一策略：仓库内存 LF，检出时按类型转换。
+# 目的：保证 一键生成报告.bat 在任何机器上克隆下来都是 CRLF。
+# 背景：cmd.exe 解析 LF-only 批处理会错乱（把 rem 注释当命令执行），
+#       曾导致换机后报 "'launcher' 不是内部或外部命令"。
+* text=auto
+
+*.bat  text eol=crlf
+*.txt  text eol=crlf
+*.py   text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+
+# 仓库自身的配置文件也保持 LF，避免每次 add 都刷行尾警告
+.gitattributes text eol=lf
+.gitignore     text eol=lf
