@@ -6,8 +6,10 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Generated reports (the filename carries a timestamp)
-AI-Skills-Trending_Report_*.html
+# Generated reports. Every HTML file this project produces is a report, so the
+# extension is ignored wholesale. Covers the timestamped current naming and any
+# older report filenames left in the folder.
+*.html
 
 # Packaging output (rebuildable from the core files)
 *.zip
