@@ -1,7 +1,8 @@
-# 行尾统一策略：仓库内存 LF，检出时按类型转换。
-# 目的：保证 一键生成报告.bat 在任何机器上克隆下来都是 CRLF。
-# 背景：cmd.exe 解析 LF-only 批处理会错乱（把 rem 注释当命令执行），
-#       曾导致换机后报 "'launcher' 不是内部或外部命令"。
+# Line-ending policy: LF inside the repository, converted on checkout by file type.
+# Purpose: run_report.bat must come out CRLF on any machine that clones this repo.
+# Background: cmd.exe mis-parses an LF-only batch file and executes `rem` comments
+# as commands, which once produced "'launcher' is not recognized as an internal or
+# external command" after the folder was copied to another machine.
 * text=auto
 
 *.bat  text eol=crlf
@@ -10,6 +11,6 @@
 *.json text eol=lf
 *.md   text eol=lf
 
-# 仓库自身的配置文件也保持 LF，避免每次 add 都刷行尾警告
+# Keep the repository's own config files LF as well, so `git add` never warns
 .gitattributes text eol=lf
 .gitignore     text eol=lf

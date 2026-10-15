@@ -1,25 +1,26 @@
-# ---- 工具元数据 ----
+# ---- tooling metadata ----
 .workbuddy-ai/
 
-# ---- 运行产物 ----
+# ---- runtime artifacts ----
 __pycache__/
 *.pyc
 *.pyo
 
-# 每次运行生成的报告（文件名带时间戳）
+# Generated reports (the filename carries a timestamp)
+AI-Skills-Trending_Report_*.html
 GitHub热门榜整理_*.html
 
-# 打包产物（可由 4 个核心文件重新打包）
+# Packaging output (rebuildable from the four core files)
 GitHub热门榜报告生成器_发布包.zip
 
-# ---- 第三方数据，不入库 ----
-# 从各仓库抓取的 README（版权归原作者）
+# ---- third-party data, deliberately not tracked ----
+# READMEs fetched from other repositories (copyright stays with their authors)
 readmes/
 total_board_raw.json
 
-# ---- 早期数据采集 / 开发脚本（非交付物）----
-# 正式程序是 github_trending_report.py，以下仅为当初生成 kb.json 的一次性脚本。
-# 如需纳入版本管理，删掉下面这几行即可。
+# ---- one-off data collection / development scripts ----
+# The shipping program is github_trending_report.py. These were used once to
+# build kb.json. Delete the lines below to bring them under version control.
 build_report.py
 collect_total.py
 fetch_readmes.py

@@ -1,24 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GitHub 热门榜 AI / SKILL 双版块报告一键生成器
-================================================
-一键完成：
-  1) 实时拉取 GitHub 官方 Trending 日榜 / 周榜 / 月榜
-  2) 按版块分别拉取总榜 / 月榜 / 周榜 / 日榜前 50 名
-     （总榜：GitHub Search 按总星排序；月/周/日榜：同话题 + 时间窗检索补足）
-  3) 按 AI / SKILL 版块分类、跨榜去重、按总星排序
-  4) 生成与人工整理版同式同构的 HTML 报告（只呈现去重后项目，每个项目附链接；
-     内置人工解读知识库，新上榜项目自动生成机读解读并标注）
-用法：
-  - 双击运行 / 无参数运行：打开图形界面。可手动选择输出目录、勾选总榜/月榜/周榜/日榜、
-    分别输入 AI 与 Agent Skill 每榜搜集数量（1-100）、选择输出范围（全部 / 只输出 Skill 项目 /
-    只输出 AI 项目），然后点击「一键拉取并生成报告」。
-  - 命令行：python github_trending_report.py --cli [--out-dir 目录]
-            [--boards 总榜,月榜,周榜,日榜] [--topn-ai 50] [--topn-sk 50]
-            [--only all|skill|ai]（all=全部；skill=只输出 Skill 项目；
-             ai=只输出 AI 项目）
-依赖：仅 Python 3 标准库（无需 pip 安装任何东西）。
+AI Skills Trending - AI / Agent Skill report generator
+======================================================
+One run does all of this:
+  1) Fetch the official GitHub Trending daily / weekly / monthly boards
+  2) Fetch the top N of each board, per section
+     (All-time: GitHub Search sorted by total stars; monthly/weekly/daily:
+      same topic plus a date-window search to fill the list)
+  3) Classify into AI / Agent Skill, deduplicate across boards, sort by total stars
+  4) Render an HTML report (only deduplicated projects, each with a link;
+     a curated knowledge base supplies the write-ups, and anything new is
+     auto-generated and labelled as such)
+
+Usage:
+  - Double-click / run with no arguments: opens the GUI. Choose an output folder,
+    tick the boards (All-time / Monthly / Weekly / Daily), set how many items to
+    collect per board for AI and Agent Skill (1-100), pick the output scope
+    (Everything / Skill projects only / AI projects only), then click
+    "Fetch and generate report".
+  - Command line: python github_trending_report.py --cli [--out-dir DIR]
+            [--boards all-time,monthly,weekly,daily] [--topn-ai 50] [--topn-sk 50]
+            [--only all|skill|ai]
+Requires only the Python 3 standard library (nothing to pip install).
 """
 import argparse
 import datetime as _dt
@@ -41,25 +45,27 @@ UA = {'User-Agent': 'gh-trending-report/1.0', 'Accept': 'application/vnd.github+
 
 
 def _load_github_token():
-    """读取 GitHub Token（可选）：依次查环境变量 GITHUB_TOKEN / GH_TOKEN。
-    配了 token 后 Search API 限额从 10 次/分钟升到 30 次/分钟，大幅减少等待。"""
+    """Read an optional GitHub token from GITHUB_TOKEN / GH_TOKEN.
+    With a token the Search API limit goes from 10 to 30 requests per minute,
+    which cuts the waiting a lot."""
     for k in ('GITHUB_TOKEN', 'GH_TOKEN', 'GITHUB_API_TOKEN'):
         v = (os.environ.get(k) or '').strip()
         if v:
             return v
     return ''
 
-# Token 运行期可变：GUI 上填写后立即生效，无需改环境变量或重启。
+# The token is mutable at runtime: pasting one into the GUI takes effect
+# immediately, with no environment change and no restart.
 STATE = {'token': _load_github_token(), 'token_ok': None, 'token_login': ''}
 
 def get_token():
     return STATE['token']
 
 def set_token(tok):
-    """设置 Token 并同步到请求头；返回旧值。"""
+    """Set the token, sync it into the request headers, and return the old value."""
     old = STATE['token']
     STATE['token'] = (tok or '').strip()
-    STATE['token_ok'] = None      # 换了 token，校验结果作废
+    STATE['token_ok'] = None      # a new token invalidates the previous check
     STATE['token_login'] = ''
     _sync_auth_header()
     return old
@@ -72,10 +78,11 @@ def _sync_auth_header():
 
 _sync_auth_header()
 
-# ---------------------------------------------------------------- 基础工具
+# ---------------------------------------------------------------- helpers
 
-# 注意：github.com / raw.githubusercontent.com 对非浏览器 UA 会直接不响应（连接超时）。
-# 网页类请求必须带浏览器 UA，否则会稳定复现 WinError 10060。
+# Note: github.com and raw.githubusercontent.com simply do not answer requests
+# that use a non-browser User-Agent (the connection just times out).
+# HTML requests must send a browser UA or they reliably fail with WinError 10060.
 BROWSER_UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
               '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36')
 HTML_HEADERS = {'User-Agent': BROWSER_UA,
@@ -96,7 +103,7 @@ def log(msg):
     try:
         print(line, flush=True)
     except UnicodeEncodeError:
-        # 极少数 GBK 控制台/重定向场景：退化为可编码字符，避免程序中断
+        # Rare non-UTF-8 console or redirect: degrade to encodable text instead of crashing
         enc = getattr(sys.stdout, 'encoding', None) or 'ascii'
         print(line.encode(enc, 'replace').decode(enc, 'replace'), flush=True)
 
@@ -105,12 +112,12 @@ def http_get(url, timeout=30, headers=None):
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read().decode('utf-8', errors='ignore')
 
-# ---------------------------------------------------------------- 1. 拉取 Trending 三榜
+# ---------------------------------------------------------------- 1. Trending boards
 
 ARTICLE_SPLIT = re.compile(r'<article class="Box-row')
 
 def parse_trending(raw):
-    """解析 GitHub Trending 页面，返回 [{repo, desc, lang, stars, gained, unit}]"""
+    """Parse a GitHub Trending page into [{repo, desc, lang, stars, gained, unit}]."""
     items = []
     for b in ARTICLE_SPLIT.split(raw)[1:]:
         b = b[:20000]
@@ -142,10 +149,11 @@ def to_num(s):
     except ValueError:
         return 0
 
-def fetch_trending_boards(labels=('日榜', '周榜', '月榜')):
-    """返回 {榜单名: [...]}，每项含 repo/desc/lang/stars/gained；labels 控制拉取哪些榜"""
+def fetch_trending_boards(labels=('Daily', 'Weekly', 'Monthly')):
+    """Return {board: [...]}, each item carrying repo/desc/lang/stars/gained.
+    `labels` selects which boards to fetch."""
     boards = {}
-    for label, since in (('日榜', 'daily'), ('周榜', 'weekly'), ('月榜', 'monthly')):
+    for label, since in (('Daily', 'daily'), ('Weekly', 'weekly'), ('Monthly', 'monthly')):
         if label not in labels:
             continue
         url = 'https://github.com/trending?since=%s' % since
@@ -156,39 +164,41 @@ def fetch_trending_boards(labels=('日榜', '周榜', '月榜')):
                 if items:
                     break
             except Exception as e:
-                log('Trending %s 拉取失败（第 %d 次）：%s' % (label, attempt, e))
+                log('Trending %s fetch failed (attempt %d): %s' % (label, attempt, e))
             if attempt < 3:
                 time.sleep(8)
         if not items:
-            log('Trending %s 未取到数据（该榜将留空，改用 Search 时间窗结果）' % label)
-        log('Trending %s：解析到 %d 个项目' % (label, len(items)))
+            log('Trending %s returned nothing; leaving it empty and relying on the search window instead' % label)
+        log('Trending %s: parsed %d projects' % (label, len(items)))
         boards[label] = items
         time.sleep(1)
     return boards
 
-# ---------------------------------------------------------------- 2. 拉取总榜（Search API）
+# ---------------------------------------------------------------- 2. All-time board (Search API)
 
 _last_search = [0.0]
-# Search API 限额：未登录 10 次/分钟，带 token 30 次/分钟。
-# 间隔取 7 秒（约 8.5 次/分钟），留足余量，比原 9 秒快且更不容易撞限额。
-# 用函数而非常量：GUI 上填 Token 后立即按新限额调整间隔。
+# Search API limits: 10 requests per minute unauthenticated, 30 with a token.
+# A 7 second gap (about 8.5 per minute) leaves headroom and still beats the old
+# 9 second gap without running into the limit as often.
+# A function rather than a constant, so pasting a token adjusts the gap at once.
 def search_gap():
     return 7.0 if get_token() else 7.5
 
 def _http_status(e):
-    """从异常里取 HTTP 状态码，取不到返回 0。"""
+    """Pull the HTTP status code out of an exception, or 0 if there is none."""
     return getattr(e, 'code', 0) or 0
 
 def _remaining_info():
-    """读最近一次响应头里的限额余量（Search 通道）。"""
-    return _last_search.append and None  # 占位，保持接口稳定
+    """Read the remaining quota from the last response headers (search channel)."""
+    return _last_search.append and None  # placeholder, kept for interface stability
 
 def _wait_for_reset():
-    """403/429 时读响应头 x-ratelimit-reset，精确等到限额重置（最多等 90 秒）。"""
+    """On 403/429, read x-ratelimit-reset and wait exactly until the quota resets (90s cap)."""
     return time.time() + 60.0
 
 def _search_get(url, tries=4):
-    """带全局限速与重试的 Search API 请求。403 时优先按响应头 x-ratelimit-reset 精确等待。"""
+    """Search API request with a global rate limit and retries.
+    On 403 it waits precisely, using the x-ratelimit-reset header."""
     last = None
     for i in range(tries):
         gap = search_gap() - (time.time() - _last_search[0])
@@ -211,31 +221,32 @@ def _search_get(url, tries=4):
                         pass
             if i + 1 >= tries:
                 break
-            log('    检索失败（HTTP %s），%.0fs 后重试（第 %d/%d 次）…'
+            log('    Search failed (HTTP %s); retrying in %.0fs (attempt %d/%d)'
                 % (code or '?', wait, i + 2, tries))
             time.sleep(wait)
         except Exception as e:
             last = e
             if i + 1 >= tries:
                 break
-            log('    检索失败（%s），15s 后重试（第 %d/%d 次）…' % (e, i + 2, tries))
+            log('    Search failed (%s); retrying in 15s (attempt %d/%d)' % (e, i + 2, tries))
             time.sleep(15.0)
     tail = ''
     if _http_status(last) == 401:
-        tail = ('；401 说明 GITHUB_TOKEN 无效或已过期，请点界面上的「确认」重新校验，'
-                '或清空该栏改用未登录限额（10 次/分钟）')
+        tail = ('; a 401 means GITHUB_TOKEN is invalid or expired. Click "Confirm" in the GUI '
+                'to re-check it, or clear the field and use the anonymous limit (10/min)')
     elif not get_token():
-        tail = ('；可在界面上填写 GITHUB_TOKEN 提升限额至 30 次/分钟，'
-                '或设置同名环境变量')
-    raise RuntimeError('检索多次失败：%s%s' % (last, tail))
+        tail = ('; paste a GITHUB_TOKEN in the GUI to raise the limit to 30/min, '
+                'or set the environment variable of the same name')
+    raise RuntimeError('Search failed repeatedly: %s%s' % (last, tail))
 
 
 def verify_token(tok=None, timeout=20):
-    """校验 Token 是否可用。返回 (ok, 说明文字)。
-    成功时顺带返回登录名与剩余额度，方便用户确认填对了账号。"""
+    """Check whether a token works. Returns (ok, message).
+    On success the message also carries the login name and the quota, so you can
+    confirm the right account was used."""
     tok = (tok if tok is not None else get_token() or '').strip()
     if not tok:
-        return False, 'Token 为空'
+        return False, 'Token is empty'
     hdr = dict(UA)
     hdr['Authorization'] = 'Bearer ' + tok
     try:
@@ -243,12 +254,12 @@ def verify_token(tok=None, timeout=20):
     except urllib.error.HTTPError as e:
         code = _http_status(e)
         if code == 401:
-            return False, 'Token 无效或已过期（401）'
+            return False, 'Token is invalid or expired (401)'
         if code == 403:
-            return False, 'Token 被拒绝（403），可能额度已用尽或权限受限'
-        return False, '校验失败：HTTP %s' % (code or '?')
+            return False, 'Token rejected (403); the quota may be exhausted or the scopes too narrow'
+        return False, 'Check failed: HTTP %s' % (code or '?')
     except Exception as e:
-        return False, '网络不通，无法校验：%s' % e
+        return False, 'Cannot reach the network to check: %s' % e
     login = me.get('login') or ''
     try:
         rl = json.loads(http_get('https://api.github.com/rate_limit',
@@ -258,7 +269,7 @@ def verify_token(tok=None, timeout=20):
         lim = 30
     STATE['token_ok'] = True
     STATE['token_login'] = login
-    return True, 'Token 有效，账号 %s（检索限额 %s 次/分钟）' % (login or '—', lim or 30)
+    return True, 'Token is valid, account %s (search limit %s/min)' % (login or '-', lim or 30)
 
 def search_repos(q, per_page=50):
     url = ('https://api.github.com/search/repositories?q=' + urllib.parse.quote(q)
@@ -275,29 +286,29 @@ def search_repos(q, per_page=50):
 
 TOPICS = {'AI': ['topic:artificial-intelligence'],
           'SKILL': ['topic:agent-skills', 'topic:claude-skills', 'topic:claude-code-skills']}
-BOARD_WINDOWS = {'日榜': 1, '周榜': 7, '月榜': 30}   # 时间窗（天）
-BOARDS = ['总榜', '月榜', '周榜', '日榜']
-TAG_CLASS = {'总榜': 'total', '月榜': 'month', '周榜': 'week', '日榜': 'day'}
-TOP_N = 50   # 每个榜单取前 50 名
+BOARD_WINDOWS = {'Daily': 1, 'Weekly': 7, 'Monthly': 30}   # date window, in days
+BOARDS = ['All-time', 'Monthly', 'Weekly', 'Daily']
+TAG_CLASS = {'All-time': 'total', 'Monthly': 'month', 'Weekly': 'week', 'Daily': 'day'}
+TOP_N = 50   # take the top 50 from each board
 
-# 限额预警：一旦某次检索报限额错误，后续请求放慢并计数，尽量避免连续撞墙。
+# Quota warning: the first rate-limit error raises a flag and is counted.
 WARN = {'quota': 0}
 
 def _quota_hit():
     WARN['quota'] += 1
     if WARN['quota'] == 1:
-        log('    ⚠ 触到 GitHub 检索限额。'
-            + ('正在按限额重置时间等待。' if get_token()
-               else '未登录限额仅 10 次/分钟，本次会明显变慢。'
-                    '建议在界面上填写 GITHUB_TOKEN'
-                    '（免费、不勾任何权限）把限额提到 30 次/分钟。'))
+        log('    ! GitHub search rate limit reached. '
+            + ('Waiting for the quota to reset.' if get_token()
+               else 'Anonymous access allows only 10/min, so this run will be slow. '
+                    'Paste a GITHUB_TOKEN in the GUI (free, no scopes needed) '
+                    'to raise it to 30/min.'))
     return WARN['quota']
 
 def date_str(days_ago):
     return (_dt.date.today() - _dt.timedelta(days=days_ago)).isoformat()
 
 def _section_count(counts, section):
-    """取某版块的搜集数量；<=0 表示不搜集该版块。"""
+    """How many items to collect for a section; <=0 skips that section."""
     if not counts:
         return TOP_N
     try:
@@ -306,7 +317,7 @@ def _section_count(counts, section):
         return TOP_N
 
 def fetch_total_boards(counts=None):
-    """总榜：各版块话题检索按总星排序，按版块分别取前 counts[section] 名。"""
+    """All-time board: topic search per section, sorted by total stars, top counts[section]."""
     result = {}
     for section, queries in TOPICS.items():
         n = _section_count(counts, section)
@@ -317,11 +328,11 @@ def fetch_total_boards(counts=None):
         for q in queries:
             try:
                 items = search_repos(q, n)
-                log('总榜 %s（%s）：%d 条' % (section, q, len(items)))
+                log('All-time %s (%s): %d items' % (section, q, len(items)))
             except Exception as e:
                 if '403' in str(e) or '429' in str(e):
                     _quota_hit()
-                log('总榜 %s 检索失败（%s）：%s' % (section, q, e))
+                log('All-time %s search failed (%s): %s' % (section, q, e))
                 items = []
             for it in items:
                 if it['repo'] not in seen:
@@ -332,9 +343,10 @@ def fetch_total_boards(counts=None):
     return result
 
 def fetch_period_boards(counts=None, windows=None):
-    """月榜/周榜/日榜：按版块分别取前 counts[section] 名。
-    windows 控制拉取哪些榜（默认全部）。Trending 页面无分页、上限约 25 条，故用时间窗检索补足。
-    返回 {榜单名: {'AI': [items], 'SKILL': [items]}}"""
+    """Monthly / Weekly / Daily boards: top counts[section] per section.
+    `windows` selects which boards to fetch (all by default). The Trending page has
+    no pagination and tops out around 25 entries, so a date-window search fills the rest.
+    Returns {board: {'AI': [items], 'SKILL': [items]}}"""
     windows = windows or BOARD_WINDOWS
     result = {b: {'AI': [], 'SKILL': []} for b in windows}
     for bname, days in windows.items():
@@ -347,11 +359,11 @@ def fetch_period_boards(counts=None, windows=None):
             for q in queries:
                 try:
                     items = search_repos(q + ' pushed:>=%s' % since, n)
-                    log('%s %s（%s pushed>=%s）：%d 条' % (bname, section, q, since, len(items)))
+                    log('%s %s (%s pushed>=%s): %d items' % (bname, section, q, since, len(items)))
                 except Exception as e:
                     if '403' in str(e) or '429' in str(e):
                         _quota_hit()
-                    log('%s %s 检索失败（%s）：%s' % (bname, section, q, e))
+                    log('%s %s search failed (%s): %s' % (bname, section, q, e))
                     items = []
                 for it in items:
                     if it['repo'] not in seen:
@@ -361,10 +373,10 @@ def fetch_period_boards(counts=None, windows=None):
             result[bname][section] = pool[:n]
     return result
 
-# ---------------------------------------------------------------- 3. README 拉取
+# ---------------------------------------------------------------- 3. README fetching
 
 def fetch_readme(repo, raw_only=False):
-    """raw 优先（无限额）；raw_only=False 时失败再退回 GitHub API readme 端点。"""
+    """Prefer raw (no rate limit); when raw_only=False, fall back to the GitHub API readme endpoint."""
     for br in ('main', 'master'):
         for name in ('README.md', 'readme.md', 'Readme.md'):
             try:
@@ -384,7 +396,8 @@ def fetch_readme(repo, raw_only=False):
         return None
 
 def fetch_readmes(repos, workers=6, rounds=3):
-    """多轮并发拉取 README（raw 通道，保护 API 限额），失败自动重试。"""
+    """Fetch READMEs concurrently over several rounds (raw channel, sparing the API
+    quota) and retry whatever fails."""
     out, pending = {}, list(repos)
     for rnd in range(1, rounds + 1):
         if not pending:
@@ -400,11 +413,11 @@ def fetch_readmes(repos, workers=6, rounds=3):
                     out[r] = v
         pending = [r for r in pending if r not in out]
         if pending:
-            log('    第 %d 轮 README 失败 %d 个，重试中…' % (rnd, len(pending)))
-    log('README 拉取完成：%d/%d 成功' % (len(out), len(repos)))
+            log('    README round %d: %d failed, retrying' % (rnd, len(pending)))
+    log('README fetch complete: %d/%d succeeded' % (len(out), len(repos)))
     return out
 
-# ---------------------------------------------------------------- 4. 分类规则
+# ---------------------------------------------------------------- 4. Classification rules
 
 AI_KEYS = [' ai ', 'ai-', 'a.i.', 'agent', 'llm', 'gpt', 'claude', 'copilot', 'codex',
            'model', 'neural', 'inference', 'rag', 'mcp', 'deep learning', 'machine learning',
@@ -421,7 +434,8 @@ PLUGIN_AGENT_KEYS = ['claude', 'agent', 'cursor', 'codex', 'copilot', 'openclaw'
                      'gemini', 'windsurf', 'cline', 'droid']
 
 def is_skill_text(repo, desc):
-    """名称/简介是否明确体现 Agent Skill（或 agent 插件）——用于版块归类（严口径）。"""
+    """Does the name/description clearly indicate an Agent Skill (or agent plugin)?
+    Used for section assignment (strict reading)."""
     text = (repo + ' ' + (desc or '')).lower()
     if 'skill' in text:
         return True
@@ -430,7 +444,8 @@ def is_skill_text(repo, desc):
     return False
 
 def is_skill_related(repo, desc, topics=None):
-    """是否为 Agent Skill 生态项目（含话题标签信号）——用于表格"是否 Agent Skill"列（宽口径）。"""
+    """Is this part of the Agent Skill ecosystem, counting topic tags?
+    Used for the "Agent Skill" table column (loose reading)."""
     if is_skill_text(repo, desc):
         return True
     if any(t in SKILL_TOPICS for t in (topics or [])):
@@ -442,25 +457,26 @@ def _has(text, keys):
     return any(k in t for k in keys)
 
 def classify(repo, desc, kb_names, topics=None):
-    """返回 'AI' / 'SKILL' / None。
-    SKILL 严格限定 Agent Skill 生态（名称/简介含 skill/plugin 证据或内置库收录）；
-    话题标签仅作"是否 Agent Skill"列的信号，不单独作为归类依据。"""
+    """Return 'AI' / 'SKILL' / None.
+    SKILL is limited to the Agent Skill ecosystem (skill/plugin evidence in the name or
+    description, or an entry in the bundled knowledge base). Topic tags only feed the
+    "Agent Skill" column; on their own they never decide the section."""
     name = repo.lower()
     text = (name + ' ' + (desc or '')).lower()
-    # 1) 内置人工知识库的归类优先
+    # 1) the curated knowledge base wins
     if repo in kb_names['AI']:
         return 'AI'
     if repo in kb_names['SKILL']:
         return 'SKILL'
-    # 2) Agent Skill 生态（严口径）
+    # 2) Agent Skill ecosystem (strict)
     if is_skill_text(repo, desc):
         return 'SKILL'
-    # 3) AI 关键词
+    # 3) AI keywords
     if _has(text, AI_KEYS):
         return 'AI'
     return None
 
-# ---------------------------------------------------------------- 5. 中文解读生成
+# ---------------------------------------------------------------- 5. Write-up generation
 
 def load_kb():
     if os.path.exists(KB_PATH):
@@ -468,92 +484,101 @@ def load_kb():
             with open(KB_PATH, encoding='utf-8') as f:
                 return json.load(f).get('projects', {})
         except Exception as e:
-            log('知识库加载失败：%s' % e)
+            log('Failed to load the knowledge base: %s' % e)
     return {}
 
-_BOARD_CN = {'total': '总榜', 'month': '月榜', 'week': '周榜', 'day': '日榜'}
+_BOARD_CN = {'total': 'All-time', 'month': 'Monthly', 'week': 'Weekly', 'day': 'Daily'}
 
 def de_slop(s):
-    """去掉 AI 腔痕迹：长破折号、装饰性 emoji。"""
+    """Strip AI tells: em dashes and decorative emoji."""
     if not s:
         return s
-    s = s.replace('——', '，').replace(' — ', '，').replace('--', '，')
-    return re.sub(r'[✅🚀💡👉🔥⭐✨🌟🎉📌⚡🎯🧩🔧🛠📦🏆💬🎨🧪🤖🐳🚀]', '', s)
+    s = s.replace('——', ', ').replace(' — ', ', ').replace('--', ', ')
+    return re.sub(r'[\u2705\U0001F680\U0001F4A1\U0001F449\U0001F525\u2b50\u2728\U0001F31F'
+                  r'\U0001F389\U0001F4CC\u26a1\U0001F3AF\U0001F9E9\U0001F527\U0001F6E0'
+                  r'\U0001F4E6\U0001F3C6\U0001F4AC\U0001F3A8\U0001F9EA\U0001F916'
+                  r'\U0001F433]', '', s)
 
-def brief_can(text, limit=110):
-    """把人工库的"能做什么"压成一句通俗简短的说明（取首个分句）。"""
+def brief_can(text, limit=150):
+    """Squeeze a knowledge-base "can" entry into one short, plain sentence."""
     if not text:
         return ''
     s = de_slop(str(text).strip())
-    if re.search(r'[\u4e00-\u9fff]', s):
-        pos = [s.find(sep) for sep in ('。', '；', ';') if sep in s]
-        if pos:
-            s = s[:min(pos)].strip()
-        else:
-            s = s.strip('。 ；;')
+    pos = [s.find(sep) for sep in ('.', ';') if sep in s]
+    if pos:
+        s = s[:min(pos)].strip()
+    else:
+        s = s.strip('. ;')
     if len(s) > limit:
         cut = s[:limit]
-        for sep in ('，', ','):
-            p = cut.rfind(sep)
-            if p > limit * 0.5:
-                cut = cut[:p]
+        for sep in (',', ' '):
+            q = cut.rfind(sep)
+            if q > limit * 0.5:
+                cut = cut[:q]
                 break
-        s = cut.rstrip('，,、 ') + '…'
+        s = cut.rstrip(', ') + '...'
     return s
 
-# ---- 自动项目的中文定位句（面向 X 的 Y，用来做什么） ----
+# ---- Fallback positioning line for projects with no curated entry ----
 DOMAIN_RULES = [
-    ('skill', 'agent 技能'), ('mcp', 'MCP 生态'),
-    (r'security|pentest|vulnerab|audit|hacker', '安全'),
-    (r'test|e2e|\bqa\b', '测试'),
-    (r'voice|speech|audio|tts|podcast', '语音音频'),
-    (r'video|image|photo|\bart\b|design|diagram|render', '图像视频与设计'),
-    (r'rag|knowledge|document|pdf|wiki', '知识库与文档'),
-    (r'browser|web|front|chrome|html|css', '前端与网页'),
-    (r'mobile|android|ios|swift', '移动端'),
-    (r'data|etl|database|sql', '数据'),
-    (r'\b(ai|agent|llm|claude|copilot|codex|gemini|gpt|openai|model|ml|computer[- ]use)\b', 'AI 智能体'),
-    (r'code|git|dev|terminal|build|compil|cad', '开发工具'),
+    ('skill', 'agent skills'), ('mcp', 'the MCP ecosystem'),
+    (r'security|pentest|vulnerab|audit|hacker', 'security'),
+    (r'test|e2e|\bqa\b', 'testing'),
+    (r'voice|speech|audio|tts|podcast', 'voice and audio'),
+    (r'video|image|photo|\bart\b|design|diagram|render', 'images, video and design'),
+    (r'rag|knowledge|document|pdf|wiki', 'knowledge bases and documents'),
+    (r'browser|web|front|chrome|html|css', 'front-end and web work'),
+    (r'mobile|android|ios|swift', 'mobile'),
+    (r'data|etl|database|sql', 'data'),
+    (r'\b(ai|agent|llm|claude|copilot|codex|gemini|gpt|openai|model|ml|computer[- ]use)\b', 'AI agents'),
+    (r'code|git|dev|terminal|build|compil|cad', 'developer tooling'),
 ]
 TYPE_RULES = [
-    (r'awesome|curated|collection|catalog|directory|list of', '合集'),
-    (r'cli|command[- ]line', '命令行工具'),
-    (r'framework|boilerplate', '框架'),
-    (r'librar|sdk|package|module', '开发库'),
-    (r'mcp', 'MCP 服务'),
-    (r'plugin|extension', '插件'),
-    (r'platform|server|runtime|engine|gateway', '平台'),
-    (r'dashboard|client|app|application|ui|studio|ide\b', '应用'),
-    ('skill', '技能'),
+    (r'awesome|curated|collection|catalog|directory|list of', 'collection'),
+    (r'cli|command[- ]line', 'CLI tool'),
+    (r'framework|boilerplate', 'framework'),
+    (r'librar|sdk|package|module', 'library'),
+    (r'mcp', 'MCP server'),
+    (r'plugin|extension', 'plugin'),
+    (r'platform|server|runtime|engine|gateway', 'platform'),
+    (r'dashboard|client|app|application|ui|studio|ide\b', 'app'),
+    ('skill', 'skill pack'),
 ]
-PURPOSE = {'合集': '，把同类资源按分类汇总起来，方便挑选',
-           '命令行工具': '，用命令行的方式安装和管理相关能力',
-           '框架': '，用来开发这类应用',
-           '开发库': '，供开发者在自己的项目里调用',
-           'MCP 服务': '，给 AI 助手提供一类标准能力',
-           '插件': '，扩展进现有 AI 工具使用',
-           '平台': '，负责运行相关任务与服务',
-           '应用': '，打开就能用',
-           '技能': '，装给 AI 助手扩展专项能力'}
-
-def _sp(s):
-    """中文语境下给英文开头的词组补一个空格。"""
-    return (' ' + s) if s[:1].isascii() and s[:1].isalpha() else s
+PURPOSE = {'collection': ', grouping related resources so you can pick what you need',
+           'CLI tool': ', driven from the command line',
+           'framework': ', used to build this kind of application',
+           'library': ', called from your own projects',
+           'MCP server': ', giving AI assistants a standard set of capabilities',
+           'plugin': ', extending the AI tools you already use',
+           'platform': ', running the related tasks and services',
+           'app': ', ready to use as soon as you open it',
+           'skill pack': ', installed into an AI assistant to add a focused capability'}
 
 def auto_brief(name, desc):
-    """为未收录项目生成一句通俗中文的"能做什么"。"""
+    """Write a plain one-line "what it does" for a project with no curated entry."""
     t = (name + ' ' + (desc or '')).lower()
-    domain = next((d for k, d in DOMAIN_RULES if re.search(k, t)), '开发者工具')
-    typ = next((ty for k, ty in TYPE_RULES if re.search(k, t)), '工具')
-    s = '面向%s的%s%s%s。' % (_sp(domain), _sp(typ), PURPOSE.get(typ, ''), '')
+    domain = next((d for k, d in DOMAIN_RULES if re.search(k, t)), 'developers')
+    typ = next((ty for k, ty in TYPE_RULES if re.search(k, t)), 'tool')
+    s = 'A %s for %s%s.' % (typ, domain, PURPOSE.get(typ, ''))
     if re.search(r'self[- ]host|local|privacy|offline|on[- ]device', t):
-        s += '可本地部署，数据不出自己的机器。'
+        s += ' Runs locally, so your data stays on your own machine.'
     elif re.search(r'free|open[- ]source', t):
-        s += '开源可自取用。'
+        s += ' Open source and free to use.'
     return s
 
+def _clip(s, n):
+    """Cut to at most n characters on a word boundary, adding an ellipsis if trimmed."""
+    s = (s or '').strip()
+    if len(s) <= n:
+        return s
+    cut = s[:n]
+    sp = cut.rfind(' ')
+    if sp > n * 0.5:
+        cut = cut[:sp]
+    return cut.rstrip(' ,;:.') + '...'
+
 def _readme_sentences(readme, limit=2, maxlen=260):
-    """从 README 提取前几句有效英文文本（去掉标记/图片/链接后）。"""
+    """Pull the first few usable sentences of English prose out of a README."""
     if not readme:
         return ''
     txt = re.sub(r'<[^>]+>', ' ', readme)
@@ -568,10 +593,11 @@ def _readme_sentences(readme, limit=2, maxlen=260):
         if len(out) >= limit:
             break
     s = ' '.join(out)
-    return (s[:maxlen] + '…') if len(s) > maxlen else s
+    return (s[:maxlen] + '...') if len(s) > maxlen else s
 
 def gen_text(project, readme):
-    """生成五要素中文解读：优先内置人工知识库，未知项目用机读模板并标注。"""
+    """Build the five-field write-up: the curated entry when we have one,
+    otherwise a generated template flagged as auto."""
     kb = project.get('_kb')
     if kb:
         return dict(what=de_slop(kb['what']), can=brief_can(kb['can']),
@@ -579,17 +605,19 @@ def gen_text(project, readme):
                     value=de_slop(kb['value']), who=de_slop(kb['who']), auto=False)
     name, desc = project['name'], project.get('desc') or ''
     return dict(
-        what='%s 是本期上榜项目。' % name,
+        what='%s appears on this period\'s trending boards.' % name,
         can=auto_brief(name, desc),
-        solves='面向「%s」场景的需求（自动生成，建议人工补充）。' % (de_slop(desc)[:60] or name),
-        value='上榜于%s，总星 %s（自动生成）。' % ('、'.join(project['boards']), fmt(project['stars'])),
-        who='关注本方向的开发者与团队（自动生成）。',
+        solves='Addresses needs around "%s" (auto-generated, worth expanding by hand).'
+               % (_clip(de_slop(desc), 90) or name),
+        value='Trending on %s with %s total stars (auto-generated).' % (', '.join(project['boards']), fmt(project['stars'])),
+        who='Developers and teams working in this area (auto-generated).',
         auto=True)
 
-# ---------------------------------------------------------------- 6. 汇总管线：分类 + 去重 + 排序
+# ---------------------------------------------------------------- 6. Pipeline: classify + dedupe + sort
 
 def build_sections(trend_boards, total_boards, period_boards, kb, mode=''):
-    """四榜 → 分类 → 去重 → 按总星排序。mode: ''=全部 | 'skill'= Skill 口径 | 'ai'= 只收 AI。"""
+    """Four boards -> classify -> dedupe -> sort by total stars.
+    mode: ''=everything | 'skill'= Skill scope | 'ai'= AI only."""
     kb_names = {'AI': set(), 'SKILL': set()}
     for n, v in kb.items():
         kb_names.setdefault(v.get('section', 'AI'), set()).add(n)
@@ -619,18 +647,19 @@ def build_sections(trend_boards, total_boards, period_boards, kb, mode=''):
         if gained:
             rec['gained'][board] = gained
 
-    # 7.1 总榜（AI 话题 => AI 版块；SKILL 话题 => 仅 Agent Skill 生态项目，其余归 AI 或丢弃）
+    # 7.1 All-time board (AI topic -> AI section; SKILL topic -> Agent Skill
+    #     ecosystem only, everything else goes to AI or is dropped)
     for it in total_boards.get('AI', []):
-        add('AI', it['repo'], it['desc'], it['lang'], it['stars'], '总榜',
+        add('AI', it['repo'], it['desc'], it['lang'], it['stars'], 'All-time',
             is_skill=is_skill_related(it['repo'], it['desc'], it.get('topics')))
     for it in total_boards.get('SKILL', []):
         if mode == 'ai':
             break
         cls = classify(it['repo'], it['desc'], kb_names, it.get('topics'))
         if cls:
-            add(cls, it['repo'], it['desc'], it['lang'], it['stars'], '总榜',
+            add(cls, it['repo'], it['desc'], it['lang'], it['stars'], 'All-time',
                 is_skill=is_skill_related(it['repo'], it['desc'], it.get('topics')))
-    # 7.2 月/周/日榜（同上口径，按版块各取前 TOP_N）
+    # 7.2 Monthly / Weekly / Daily (same rules, top TOP_N per section)
     for bname, by_section in period_boards.items():
         for it in by_section.get('AI', []):
             add('AI', it['repo'], it['desc'], it['lang'], it['stars'], bname,
@@ -641,7 +670,7 @@ def build_sections(trend_boards, total_boards, period_boards, kb, mode=''):
                 if cls:
                     add(cls, it['repo'], it['desc'], it['lang'], it['stars'], bname,
                         is_skill=is_skill_related(it['repo'], it['desc'], it.get('topics')))
-    # 7.3 Trending 官方页面（真实排序，附带周期新增星）
+    # 7.3 The official Trending pages (real ordering, plus stars gained in the period)
     for label, items in trend_boards.items():
         for it in items:
             sec = classify(it['repo'], it['desc'], kb_names)
@@ -650,14 +679,14 @@ def build_sections(trend_boards, total_boards, period_boards, kb, mode=''):
             add(sec, it['repo'], it['desc'], it['lang'], to_num(it['stars']),
                 label, gained=it.get('gained', ''),
                 is_skill=is_skill_related(it['repo'], it['desc']))
-            if label == '日榜' and it.get('gained') and sec == 'AI':
+            if label == 'Daily' and it.get('gained') and sec == 'AI':
                 cand = (to_num(it['gained']), it['repo'])
                 cur = day_gainer[sec]
                 if cur is None or cand[0] > cur[0]:
                     day_gainer[sec] = cand
 
     sections = {}
-    # 7.4 AI 与 SKILL 两个来源池合并、跨池去重，按总星排序
+    # 7.4 Merge the AI and SKILL pools, dedupe across them, sort by total stars
     all_merged, seen = [], {}
     for section in ('AI', 'SKILL'):
         for p in sorted(pool[section].values(), key=lambda x: -x['stars']):
@@ -668,7 +697,7 @@ def build_sections(trend_boards, total_boards, period_boards, kb, mode=''):
             seen[p['name']] = p
             all_merged.append(p)
     all_merged.sort(key=lambda x: -x['stars'])
-    # 7.5 拆分：Agent Skill 项目（严格口径，仅技能生态）与 其他项目（AI 等）
+    # 7.5 Split into Agent Skill projects (strict, ecosystem only) and everything else
     skill_names = {p['name'] for p in pool['SKILL'].values()}
     skill_block = [p for p in all_merged if p['name'] in skill_names]
     other_block = [p for p in all_merged if p['name'] not in skill_names]
@@ -676,7 +705,7 @@ def build_sections(trend_boards, total_boards, period_boards, kb, mode=''):
     sections['other'] = dict(merged=other_block)
     return sections
 
-# ---------------------------------------------------------------- 7. HTML 模板（与人工整理版同式）
+# ---------------------------------------------------------------- 7. HTML template
 
 CSS = """
 :root{--bg:#f6f8fa;--card:#ffffff;--ink:#1f2328;--muted:#59636e;--line:#d1d9e0;
@@ -725,13 +754,13 @@ td.brief{font-size:13px;line-height:1.6;min-width:220px}
 footer{margin-top:44px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
 """
 
-HTML_TEMPLATE = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+HTML_TEMPLATE = """<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GitHub 热门榜整理：AI 与 SKILL 双版块报告（«DATE»）</title>
+<title>GitHub Trending: AI and Agent Skill Report («DATE»)</title>
 <style>«CSS»</style></head><body><div class="wrap">
 <header class="hero">
-<h1>GitHub 热门榜整理：AI 与 Agent Skill 项目报告</h1>
-<div class="sub">数据采集时间：«DATE» «TIME» ｜ 榜单口径：«BOARDS»«SCOPE»</div>
+<h1>GitHub Trending: AI and Agent Skill Projects</h1>
+<div class="sub">Collected «DATE» «TIME» | Boards: «BOARDS»«SCOPE»</div>
 <div class="stats">
 «STATS»
 </div>
@@ -741,14 +770,17 @@ HTML_TEMPLATE = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"
 «OTHER_BLOCK»
 
 <footer>
-口径备注：Trending 日榜统计"短周期 star 增速"而非总星；月/周/日榜的补足部分为时间窗 + 总星口径，与扩展内增速榜可能存在差异；AI 榜与 SKILL 榜合并去重后，按是否 Agent Skill 生态拆成两部分展示。
-本报告由 github_trending_report.py 于 «DATE» «TIME» 自动生成，仅供技术选型与学习参考。
+Method notes: the Trending daily board ranks by short-term star velocity rather than
+total stars. The monthly, weekly and daily lists are topped up with a date-window plus
+total-stars search, so they can differ from an in-extension velocity board. The AI and
+SKILL pools are merged, deduplicated, then split into Agent Skill and everything else.
+Generated by github_trending_report.py on «DATE» «TIME» for reference only.
 </footer>
 </div></body></html>
 """
 
 def _board_tag(b):
-    """上榜来源标签：精简为 总/日/周/月 单字。"""
+    """Board tag, shortened to a single letter."""
     return '<span class="tag %s">%s</span>' % (TAG_CLASS.get(b, 'total'), b[0])
 
 def merged_table_html(merged, show_skill_col=True):
@@ -758,7 +790,7 @@ def merged_table_html(merged, show_skill_col=True):
         url = 'https://github.com/%s' % p['name']
         brief = gen_text(p, None)['can']
         if show_skill_col:
-            mark = '<span class="tag total">\u662f</span>' if p.get('is_skill') else '\u5426'
+            mark = '<span class="tag total">Yes</span>' if p.get('is_skill') else 'No'
             skill_td = '<td class="ctr">%s</td>' % mark
         else:
             skill_td = ''
@@ -767,10 +799,10 @@ def merged_table_html(merged, show_skill_col=True):
                     '<td class="link"><a href="%s">%s</a></td></tr>'
                     % (i, esc(url), esc(p['name']), esc(brief), skill_td,
                        fmt(p['stars']), esc(url), esc(url)))
-    return ('<table><tr><th class="num">#</th><th>项目</th>'
-            '<th>\u8fd9\u4e2a\u9879\u76ee\u662f\u505a\u4ec0\u4e48\u7684</th>%s'
-            '<th class="num">\u603b\u661f\u6570</th>'
-            '<th>\u9879\u76ee\u94fe\u63a5</th></tr>%s</table>'
+    return ('<table><tr><th class="num">#</th><th>Project</th>'
+            '<th>What it does</th>%s'
+            '<th class="num">Total stars</th>'
+            '<th>Link</th></tr>%s</table>'
             % (skill_th, ''.join(rows)))
 
 def detail_cards_html(merged, readmes, deep_n=15):
@@ -779,30 +811,31 @@ def detail_cards_html(merged, readmes, deep_n=15):
         t = gen_text(p, readmes.get(p['name']))
         cls = 'card deep' if i <= deep_n else 'card'
         tags = ''.join(_board_tag(b) for b in p['boards'])
-        tags += ('<span class="tag auto">自动解读</span>' if t['auto']
-                 else '<span class="tag total">人工解读</span>')
+        tags += ('<span class="tag auto">Auto-generated</span>' if t['auto']
+                 else '<span class="tag total">Curated</span>')
         url = 'https://github.com/%s' % p['name']
         out.append('<div class="%s"><h4>%d. <a href="%s">%s</a></h4>'
-                   '<div class="meta">%s ★ %s ｜ %s ｜ %s<br><a href="%s">%s</a></div><ul class="five">'
-                   '<li><b>是什么</b>%s</li><li><b>能做什么</b>%s</li>'
-                   '<li><b>解决什么</b>%s</li><li><b>价值</b>%s</li>'
-                   '<li><b>适合谁</b>%s</li></ul></div>'
+                   '<div class="meta">%s ★ %s | %s | %s<br><a href="%s">%s</a></div><ul class="five">'
+                   '<li><b>What it is</b>%s</li><li><b>What it does</b>%s</li>'
+                   '<li><b>What it solves</b>%s</li><li><b>Why it matters</b>%s</li>'
+                   '<li><b>Who it is for</b>%s</li></ul></div>'
                    % (cls, i, esc(url), esc(p['name']), tags, fmt(p['stars']),
-                      esc(p['lang'] or '—'), esc(de_slop(p.get('desc') or '')[:110]),
+                      esc(p['lang'] or '-'), esc(de_slop(p.get('desc') or '')[:110]),
                       esc(url), esc(url),
                       esc(t['what']), esc(t['can']), esc(t['solves']),
                       esc(t['value']), esc(t['who'])))
     return ''.join(out)
 
 def render_html(sections, boards=None, counts=None, mode=''):
-    """mode: ''=全部两块 | 'skill'=只输出 Skill 项目 | 'ai'=只输出 AI 项目"""
+    """mode: ''=both sections | 'skill'=Skill projects only | 'ai'=AI projects only"""
     now = _dt.datetime.now()
-    boards = boards or ['总榜', '月榜', '周榜', '日榜']
+    boards = boards or ['All-time', 'Monthly', 'Weekly', 'Daily']
     counts = counts or {'AI': TOP_N, 'SKILL': TOP_N}
 
-    skill_pool = sections['skill']['merged']          # Agent Skill 版块项目
-    ai_pool = sections['other']['merged']             # AI 版块项目
-    # Skill 项目 = Agent Skill 版块 ∪ AI 版块中的 Agent Skill 项目（合并去重）
+    skill_pool = sections['skill']['merged']          # Agent Skill section
+    ai_pool = sections['other']['merged']             # AI section
+    # Skill projects = the Agent Skill section plus Agent Skill projects from the AI
+    # section, merged and deduplicated
     skill_all = {p['name']: p for p in skill_pool}
     for p in ai_pool:
         if p.get('is_skill') and p['name'] not in skill_all:
@@ -812,44 +845,46 @@ def render_html(sections, boards=None, counts=None, mode=''):
                      key=lambda x: -x['stars'])
 
     if mode == 'skill':
-        scope = ('；只输出 Skill 项目（Agent Skill 版块 + AI 版块中的 Agent Skill 项目，合并去重）')
+        scope = ('; Skill projects only (the Agent Skill section plus Agent Skill '
+                 'projects from the AI section, merged and deduplicated)')
         stats = ('<div class="stat"><b style="color:var(--skill)">%d</b>'
-                 '<span>Skill 项目数（合并去重后）</span></div>' % len(skill_all))
-        main = ('<h2>Skill 项目</h2>'
-                '<h3>1.1 Skill 项目总表（Agent Skill 版块 + AI 版块中的 Agent Skill 项目，'
-                '合并去重后按总星排序，共 %d 个）</h3>%s'
-                '<h3>1.2 Skill 项目详细解读</h3>'
+                 '<span>Skill projects (merged and deduplicated)</span></div>' % len(skill_all))
+        main = ('<h2>Skill projects</h2>'
+                '<h3>1.1 Skill projects (the Agent Skill section plus Agent Skill projects '
+                'from the AI section, merged and deduplicated, sorted by total stars, %d total)</h3>%s'
+                '<h3>1.2 Skill project details</h3>'
                 '<div class="cards skill-cards">%s</div>'
                 % (len(skill_all), merged_table_html(skill_all, show_skill_col=False),
                    detail_cards_html(skill_all, {})))
         other = ''
     elif mode == 'ai':
-        scope = '；只输出 AI 项目（AI 版块去除 Agent Skill 项目）'
+        scope = '; AI projects only (the AI section with Agent Skill projects removed)'
         stats = ('<div class="stat"><b style="color:var(--ai)">%d</b>'
-                 '<span>AI 项目数（AI 版块去除 Agent Skill 项目）</span></div>' % len(ai_only))
-        main = ('<h2>AI 项目</h2>'
-                '<h3>1.1 AI 项目总表（AI 版块去除 Agent Skill 项目后按总星排序，共 %d 个）</h3>%s'
-                '<h3>1.2 AI 项目详细解读</h3>'
+                 '<span>AI projects (Agent Skill projects removed)</span></div>' % len(ai_only))
+        main = ('<h2>AI projects</h2>'
+                '<h3>1.1 AI projects (Agent Skill projects removed, sorted by total stars, %d total)</h3>%s'
+                '<h3>1.2 AI project details</h3>'
                 '<div class="cards ai-cards">%s</div>'
                 % (len(ai_only), merged_table_html(ai_only, show_skill_col=False),
                    detail_cards_html(ai_only, {})))
         other = ''
     else:
-        scope = ('；AI 每榜前 %d 名、Agent Skill 每榜前 %d 名；两榜合并去重后按总星排序'
+        scope = ('; top %d per board for AI and top %d for Agent Skill; both pools merged, '
+                 'deduplicated and sorted by total stars'
                  % (counts.get('AI', TOP_N), counts.get('SKILL', TOP_N)))
         stats = ('<div class="stat"><b style="color:var(--skill)">%d</b>'
-                 '<span>Agent Skill 项目数（去重后）</span></div>'
+                 '<span>Agent Skill projects (deduplicated)</span></div>'
                  '<div class="stat"><b style="color:var(--ai)">%d</b>'
-                 '<span>其他项目数（AI 等，去重后）</span></div>'
+                 '<span>Other projects (AI etc., deduplicated)</span></div>'
                  % (len(skill_pool), len(ai_pool)))
-        main = ('<h2>项目总览与解读</h2>'
-                '<h3>1.1 Agent Skill 项目总表（按总星排序，共 %d 个）</h3>%s'
-                '<h3>1.2 Agent Skill 项目详细解读</h3>'
+        main = ('<h2>Project overview and write-ups</h2>'
+                '<h3>1.1 Agent Skill projects (sorted by total stars, %d total)</h3>%s'
+                '<h3>1.2 Agent Skill project details</h3>'
                 '<div class="cards skill-cards">%s</div>'
                 % (len(skill_pool), merged_table_html(skill_pool),
                    detail_cards_html(skill_pool, {})))
-        other = ('<h3>1.3 其他项目总表（按总星排序，共 %d 个）</h3>%s'
-                 '<h3>1.4 其他项目详细解读</h3>'
+        other = ('<h3>1.3 Other projects (sorted by total stars, %d total)</h3>%s'
+                 '<h3>1.4 Other project details</h3>'
                  '<div class="cards ai-cards">%s</div>'
                  % (len(ai_pool), merged_table_html(ai_pool),
                     detail_cards_html(ai_pool, {})))
@@ -864,12 +899,12 @@ def render_html(sections, boards=None, counts=None, mode=''):
         html = html.replace('«' + k + '»', v)
     return html
 
-DEFAULT_CFG = dict(boards=['总榜', '月榜', '周榜', '日榜'],
+DEFAULT_CFG = dict(boards=['All-time', 'Monthly', 'Weekly', 'Daily'],
                     topn_ai=50, topn_sk=50, only='', outdir='')
-ALL_BOARDS = ['总榜', '月榜', '周榜', '日榜']
-MODES = {'': '输出全部（Agent Skill 版块 + AI 版块）',
-         'skill': '只输出 Skill 项目',
-         'ai': '只输出 AI 项目'}
+ALL_BOARDS = ['All-time', 'Monthly', 'Weekly', 'Daily']
+MODES = {'': 'Everything (Agent Skill + AI sections)',
+         'skill': 'Skill projects only',
+         'ai': 'AI projects only'}
 
 def _clamp_topn(v, default=TOP_N):
     try:
@@ -889,51 +924,52 @@ def run_pipeline(on_done=None, cfg=None):
     if cfg.get('token') is not None:
         set_token(cfg.get('token'))
 
-    # Token 填了但没在界面点过「确认」时，先用一次轻量请求校验；
-    # 无效就在开局明确报错，避免后面每个检索都白等一轮 401 重试。
+    # If a token is present but was never confirmed in the GUI, check it once up
+    # front. Failing fast here beats every later search burning a round of 401 retries.
     if get_token() and STATE['token_ok'] is None:
         ok, msg = verify_token()
         if ok:
-            log('Token 校验通过：%s' % msg)
+            log('Token check passed: %s' % msg)
         else:
-            raise RuntimeError('%s。请在界面上点「确认」重新校验，或清空 Token 一栏改用'
-                               '未登录限额（10 次/分钟）。' % msg)
+            raise RuntimeError('%s. Click "Confirm" in the GUI to re-check it, or clear '
+                               'the token field to use the anonymous limit (10/min).' % msg)
 
     t0 = time.time()
     sel_period = [b for b in boards if b in BOARD_WINDOWS]
-    log('步骤 1/4：拉取 Trending（%s）…' % ('、'.join(b for b in boards if b != '总榜') or '无'))
-    trend = fetch_trending_boards([b for b in boards if b != '总榜'])
+    log('Step 1/4: fetching Trending (%s)' % (', '.join(b for b in boards if b != 'All-time') or 'none'))
+    trend = fetch_trending_boards([b for b in boards if b != 'All-time'])
     if get_token():
-        tag = ('（账号 %s）' % STATE['token_login']) if STATE['token_login'] else ''
-        log('已启用 GitHub Token%s，检索限额 30 次/分钟。' % tag)
+        tag = (' (account %s)' % STATE['token_login']) if STATE['token_login'] else ''
+        log('GitHub token enabled%s; search limit 30/min.' % tag)
     else:
-        log('未填写 GitHub Token，检索限额 10 次/分钟（较慢）。'
-            '可在界面 Token 一栏粘贴后点「确认」，即可提到 30 次/分钟。')
-    log('步骤 2/4：拉取候选（%s；AI 每榜 %d 名 / Agent Skill 每榜 %d 名；%s）…'
-        % ('、'.join(boards), counts['AI'], counts['SKILL'], MODES[mode]))
-    total = fetch_total_boards(counts) if '总榜' in boards else {'AI': [], 'SKILL': []}
+        log('No GitHub token set; search limit 10/min (slower). '
+            'Paste one into the Token field and click "Confirm" to raise it to 30/min.')
+    log('Step 2/4: fetching candidates (%s; top %d per board for AI, top %d for Agent Skill; %s)'
+        % (', '.join(boards), counts['AI'], counts['SKILL'], MODES[mode]))
+    total = fetch_total_boards(counts) if 'All-time' in boards else {'AI': [], 'SKILL': []}
     period = (fetch_period_boards(counts, {b: BOARD_WINDOWS[b] for b in sel_period})
               if sel_period else {})
-    log('步骤 3/4：分类、去重、排序 …')
+    log('Step 3/4: classifying, deduplicating, sorting')
     kb = load_kb()
     sections = build_sections(trend, total, period, kb, mode=mode)
     if not sections['skill']['merged'] and not sections['other']['merged']:
-        raise RuntimeError('未拉到任何数据。可能原因：网络不通，或 GitHub 检索限额被用尽。'
-                           '建议等待 1 分钟后重试' + ('，或在界面填写 GITHUB_TOKEN 提升限额。'
-                           if not get_token() else '。'))
-    log('步骤 4/4：生成 HTML 报告 …')
+        raise RuntimeError('No data collected. The network may be down, or the GitHub '
+                           'search quota may be exhausted. Wait a minute and retry'
+                           + (', or set a GITHUB_TOKEN to raise the limit.'
+                              if not get_token() else '.'))
+    log('Step 4/4: rendering the HTML report')
     html = render_html(sections, boards=boards, counts=counts, mode=mode)
-    out = os.path.join(outdir, 'GitHub热门榜整理_AI与SKILL版块_%s.html'
+    out = os.path.join(outdir, 'AI-Skills-Trending_Report_%s.html'
                        % _dt.datetime.now().strftime('%Y-%m-%d_%H%M'))
     with open(out, 'w', encoding='utf-8') as f:
         f.write(html)
-    log('完成：%s（Agent Skill 版块 %d 个 / AI 版块 %d 个；%s，耗时 %.0f 秒）'
+    log('Done: %s (Agent Skill section %d / AI section %d; %s; %.0fs)'
         % (out, len(sections['skill']['merged']), len(sections['other']['merged']),
            MODES[mode], time.time() - t0))
     if WARN['quota']:
-        log('提示：本次有 %d 次检索触到限额并被重试。' % WARN['quota']
-            + ('若频繁出现，可再调大检索间隔。' if get_token()
-               else '在界面 Token 一栏填写 GITHUB_TOKEN 可把限额从 10 提升到 30 次/分钟。'))
+        log('Note: %d search call(s) hit the rate limit and were retried.' % WARN['quota']
+            + (' If this happens often, widen the search gap.' if get_token()
+               else ' A GITHUB_TOKEN in the GUI raises the limit from 10 to 30/min.'))
     if on_done:
         on_done(out)
     return out
@@ -943,8 +979,8 @@ def main_cli(cfg=None):
         run_pipeline(on_done=lambda p: webbrowser.open('file://' + os.path.abspath(p)),
                      cfg=cfg)
     except Exception as e:
-        # 命令行模式下把错误打成一行清晰提示，不抛整段 traceback
-        log('失败：%s' % e)
+        # In CLI mode print one clear line instead of a full traceback
+        log('Failed: %s' % e)
         sys.exit(1)
 
 def main_gui():
@@ -952,39 +988,40 @@ def main_gui():
     from tkinter import filedialog, messagebox, scrolledtext
 
     root = tk.Tk()
-    root.title('GitHub 热门榜 AI/SKILL 报告生成器')
+    root.title('AI Skills Trending - report generator')
     root.geometry('760x800')
 
-    tk.Label(root, text='GitHub 热门榜 · AI / Agent Skill 报告一键生成',
+    tk.Label(root, text='AI Skills Trending  |  AI / Agent Skill report generator',
              font=('Microsoft YaHei', 14, 'bold'), pady=8).pack()
 
-    # 输出目录
+    # Output folder
     fr_dir = tk.Frame(root)
     fr_dir.pack(fill='x', padx=16, pady=4)
-    tk.Label(fr_dir, text='输出目录：', font=('Microsoft YaHei', 10)).pack(side='left')
+    tk.Label(fr_dir, text='Output folder:', font=('Microsoft YaHei', 10)).pack(side='left')
     dir_var = tk.StringVar(value=BASE_DIR)
     tk.Entry(fr_dir, textvariable=dir_var, width=52).pack(side='left', padx=4)
 
     def pick_dir():
-        d = filedialog.askdirectory(title='选择 HTML 报告输出目录', initialdir=dir_var.get())
+        d = filedialog.askdirectory(title='Choose the HTML report output folder',
+                                   initialdir=dir_var.get())
         if d:
             dir_var.set(d)
 
-    tk.Button(fr_dir, text='浏览…', command=pick_dir).pack(side='left')
+    tk.Button(fr_dir, text='Browse...', command=pick_dir).pack(side='left')
 
-    # 榜单选择
+    # Boards
     fr_b = tk.Frame(root)
     fr_b.pack(fill='x', padx=16, pady=4)
-    tk.Label(fr_b, text='搜集榜单：', font=('Microsoft YaHei', 10)).pack(side='left')
+    tk.Label(fr_b, text='Boards:', font=('Microsoft YaHei', 10)).pack(side='left')
     board_vars = {b: tk.BooleanVar(value=True) for b in ALL_BOARDS}
     for b in ALL_BOARDS:
         tk.Checkbutton(fr_b, text=b, variable=board_vars[b],
                        font=('Microsoft YaHei', 10)).pack(side='left', padx=6)
 
-    # 每榜数量（按版块分别设置）
+    # Per-board limit, set separately for each section
     fr_n = tk.Frame(root)
     fr_n.pack(fill='x', padx=16, pady=4)
-    tk.Label(fr_n, text='每榜数量：', font=('Microsoft YaHei', 10)).pack(side='left')
+    tk.Label(fr_n, text='Per-board limit:', font=('Microsoft YaHei', 10)).pack(side='left')
     tk.Label(fr_n, text='AI', font=('Microsoft YaHei', 10)).pack(side='left')
     topn_ai_var = tk.StringVar(value=str(TOP_N))
     ai_entry = tk.Entry(fr_n, textvariable=topn_ai_var, width=6)
@@ -993,12 +1030,13 @@ def main_gui():
     topn_sk_var = tk.StringVar(value=str(TOP_N))
     topn_sk_entry = tk.Entry(fr_n, textvariable=topn_sk_var, width=6)
     topn_sk_entry.pack(side='left', padx=3)
-    tk.Label(fr_n, text='（各 1-100）', font=('Microsoft YaHei', 9), fg='#59636e').pack(side='left')
+    tk.Label(fr_n, text='(1-100 each)', font=('Microsoft YaHei', 9), fg='#59636e').pack(side='left')
 
-    # GitHub Token（可选）：填完点「确认」校验并立即生效，不限权限、只读公开数据即可
+    # GitHub token (optional). Paste, click "Confirm", and it takes effect at once.
+    # No scopes are needed; read access to public data is enough.
     fr_tk = tk.Frame(root)
     fr_tk.pack(fill='x', padx=16, pady=4)
-    tk.Label(fr_tk, text='GitHub Token：', font=('Microsoft YaHei', 10)).pack(side='left')
+    tk.Label(fr_tk, text='GitHub Token:', font=('Microsoft YaHei', 10)).pack(side='left')
     token_var = tk.StringVar(value=get_token())
     token_entry = tk.Entry(fr_tk, textvariable=token_var, width=40, show='*')
     token_entry.pack(side='left', padx=4)
@@ -1008,7 +1046,7 @@ def main_gui():
     def toggle_show():
         token_entry.config(show='' if show_var.get() else '*')
 
-    tk.Checkbutton(fr_tk, text='显示', variable=show_var, command=toggle_show,
+    tk.Checkbutton(fr_tk, text='Show', variable=show_var, command=toggle_show,
                    font=('Microsoft YaHei', 9)).pack(side='left')
 
     token_state = tk.Label(root, text='', font=('Microsoft YaHei', 9), fg='#59636e',
@@ -1016,65 +1054,66 @@ def main_gui():
     token_state.pack(fill='x', padx=16)
 
     def _token_hint():
-        """刷新 Token 状态提示文字。"""
+        """Refresh the token status line."""
         if get_token():
             if STATE['token_login']:
-                token_state.config(text='已启用（账号 %s），检索限额 30 次/分钟。'
+                token_state.config(text='Active (account %s); search limit 30/min.'
                                         % STATE['token_login'], fg='#1a7f37')
             else:
-                token_state.config(text='已填写，未校验。点「确认」可校验并提升限额至 30 次/分钟。',
-                                   fg='#9a6700')
+                token_state.config(text='Set but not verified. Click "Confirm" to verify it '
+                                        'and raise the limit to 30/min.', fg='#9a6700')
         else:
-            token_state.config(text='未填写：检索限额 10 次/分钟（较慢）。'
-                                    '可留空跳过，或填一个只读 Token 提速。', fg='#59636e')
+            token_state.config(text='Empty: search limit 10/min (slower). Leave it blank, '
+                                    'or add a read-only token to speed things up.', fg='#59636e')
 
     def confirm_token():
         tok = token_var.get().strip()
         set_token(tok)
         if not tok:
-            token_state.config(text='已清除 Token，恢复未登录限额（10 次/分钟）。', fg='#59636e')
+            token_state.config(text='Token cleared; back to the anonymous limit (10/min).',
+                               fg='#59636e')
             return
-        token_state.config(text='校验中…', fg='#9a6700')
+        token_state.config(text='Checking...', fg='#9a6700')
         root.update_idletasks()
 
         def _chk():
             ok, msg = verify_token(tok)
             root.after(0, lambda: token_state.config(
-                text=('✓ ' if ok else '✗ ') + msg,
+                text=('[ok] ' if ok else '[failed] ') + msg,
                 fg='#1a7f37' if ok else '#cf222e'))
 
         threading.Thread(target=_chk, daemon=True).start()
 
-    tk.Button(fr_tk, text='确认', command=confirm_token, width=6).pack(side='left', padx=(2, 0))
-    tk.Button(fr_tk, text='获取 Token…',
+    tk.Button(fr_tk, text='Confirm', command=confirm_token, width=8).pack(side='left', padx=(2, 0))
+    tk.Button(fr_tk, text='Get a token...',
               command=lambda: webbrowser.open('https://github.com/settings/tokens')).pack(
                   side='left', padx=(6, 0))
     _token_hint()
     if get_token() and not STATE['token_login']:
         threading.Thread(target=lambda: root.after(0, confirm_token), daemon=True).start()
 
-    # 输出范围（三选一）
+    # Output scope (pick one)
     fr_mode = tk.Frame(root)
     fr_mode.pack(fill='x', padx=16, pady=4)
-    tk.Label(fr_mode, text='输出范围：', font=('Microsoft YaHei', 10)).pack(side='left')
+    tk.Label(fr_mode, text='Output scope:', font=('Microsoft YaHei', 10)).pack(side='left')
     mode_var = tk.StringVar(value='')
 
     def refresh_mode():
         m = mode_var.get()
-        # 'ai' 模式不需要 Agent Skill 数量；'skill' 模式两者都需要
+        # 'ai' mode needs no Agent Skill count; 'skill' mode needs both
         sk_state = 'disabled' if m == 'ai' else 'normal'
         topn_sk_entry.config(state=sk_state)
 
-    MODE_LABELS = [('', '全部'), ('skill', '只输出 Skill 项目'),
-                   ('ai', '只输出 AI 项目')]
+    MODE_LABELS = [('', 'Everything'), ('skill', 'Skill projects only'),
+                   ('ai', 'AI projects only')]
     for val, label in MODE_LABELS:
         tk.Radiobutton(fr_mode, text=label, variable=mode_var, value=val,
                        command=refresh_mode, font=('Microsoft YaHei', 10)).pack(side='left', padx=8)
 
-    btn = tk.Button(root, text='一键拉取并生成报告', font=('Microsoft YaHei', 12, 'bold'),
+    btn = tk.Button(root, text='Fetch and generate report', font=('Microsoft YaHei', 12, 'bold'),
                     bg='#0969da', fg='white', height=2, width=24)
     btn.pack(pady=12)
-    status = tk.Label(root, text='就绪', font=('Microsoft YaHei', 10), fg='#1a7f37')
+    status = tk.Label(root, text='Ready', font=('Microsoft YaHei', 10), fg='#1a7f37')
     status.pack()
     logbox = scrolledtext.ScrolledText(root, height=12, font=('Consolas', 9))
     logbox.pack(fill='both', expand=True, padx=12, pady=8)
@@ -1089,7 +1128,7 @@ def main_gui():
     def read_cfg():
         boards = [b for b in ALL_BOARDS if board_vars[b].get()]
         if not boards:
-            raise ValueError('至少选择一个榜单')
+            raise ValueError('Select at least one board')
         mode = mode_var.get() if mode_var.get() in ('', 'skill', 'ai') else ''
         if mode == 'ai':
             topn_ai = _clamp_topn(topn_ai_var.get())
@@ -1097,18 +1136,18 @@ def main_gui():
             try:
                 topn_ai = int(topn_ai_var.get().strip())
             except ValueError:
-                raise ValueError('AI 每榜数量必须是整数')
+                raise ValueError('The AI per-board limit must be a whole number')
             if not (1 <= topn_ai <= 100):
-                raise ValueError('AI 每榜数量需在 1-100 之间')
+                raise ValueError('The AI per-board limit must be between 1 and 100')
         try:
             topn_sk = int(topn_sk_var.get().strip())
         except ValueError:
-            raise ValueError('Agent Skill 每榜数量必须是整数')
+            raise ValueError('The Agent Skill per-board limit must be a whole number')
         if not (1 <= topn_sk <= 100):
-            raise ValueError('Agent Skill 每榜数量需在 1-100 之间')
+            raise ValueError('The Agent Skill per-board limit must be between 1 and 100')
         outdir = dir_var.get().strip() or BASE_DIR
         if not os.path.isdir(outdir):
-            raise ValueError('输出目录不存在：%s' % outdir)
+            raise ValueError('Output folder does not exist: %s' % outdir)
         return dict(boards=boards, topn_ai=topn_ai, topn_sk=topn_sk,
                     only=mode, outdir=outdir, token=token_var.get().strip())
 
@@ -1116,11 +1155,11 @@ def main_gui():
         try:
             out = run_pipeline(on_done=lambda p: webbrowser.open('file://' + os.path.abspath(p)),
                                cfg=cfg)
-            root.after(0, lambda: (status.config(text='完成：%s' % os.path.basename(out), fg='#1a7f37'),
-                                   messagebox.showinfo('完成', '报告已生成并在浏览器打开：\n%s' % out)))
+            root.after(0, lambda: (status.config(text='Done: %s' % os.path.basename(out), fg='#1a7f37'),
+                                   messagebox.showinfo('Done', 'Report generated and opened in your browser://n%s' % out)))
         except Exception as e:
-            root.after(0, lambda: (status.config(text='失败：%s' % e, fg='#cf222e'),
-                                   messagebox.showerror('出错', str(e))))
+            root.after(0, lambda: (status.config(text='Failed: %s' % e, fg='#cf222e'),
+                                   messagebox.showerror('Error', str(e))))
         finally:
             root.after(0, lambda: btn.config(state='normal'))
 
@@ -1128,11 +1167,11 @@ def main_gui():
         try:
             cfg = read_cfg()
         except ValueError as e:
-            messagebox.showwarning('参数有误', str(e))
+            messagebox.showwarning('Invalid settings', str(e))
             return
         btn.config(state='disabled')
-        status.config(text='正在拉取数据（%s；AI %d / Agent Skill %d；%s），请稍候…'
-                    % ('、'.join(cfg['boards']), cfg['topn_ai'], cfg['topn_sk'],
+        status.config(text='Fetching (%s; AI %d / Agent Skill %d; %s), please wait...'
+                    % (', '.join(cfg['boards']), cfg['topn_ai'], cfg['topn_sk'],
                        MODES.get(cfg.get('only', ''), '')), fg='#9a6700')
         sys.stdout = _Log()
         threading.Thread(target=worker, args=(cfg,), daemon=True).start()
@@ -1141,34 +1180,43 @@ def main_gui():
     root.mainloop()
 
 if __name__ == '__main__':
-    try:                      # 兼容 GBK 控制台：无法编码的字符替换而非抛错
+    try:                      # Non-UTF-8 consoles: replace instead of raising
         sys.stdout.reconfigure(errors='replace')
         sys.stderr.reconfigure(errors='replace')
     except Exception:
         pass
-    ap = argparse.ArgumentParser(description='GitHub 热门榜 AI/SKILL 报告一键生成器')
-    ap.add_argument('--cli', action='store_true', help='命令行模式运行（无界面）')
-    ap.add_argument('--out-dir', default='', help='HTML 报告输出目录（默认脚本所在目录）')
-    ap.add_argument('--boards', default='总榜,月榜,周榜,日榜',
-                    help='要搜集的榜单，逗号分隔，如：总榜,日榜')
-    ap.add_argument('--topn-ai', type=int, default=0, help='AI 每榜搜集数量（1-100，默认 50）')
-    ap.add_argument('--topn-sk', type=int, default=0, help='Agent Skill 每榜搜集数量（1-100，默认 50）')
-    ap.add_argument('--topn', type=int, default=0, help='同时设置 AI 与 Agent Skill 每榜数量')
+    ap = argparse.ArgumentParser(
+        description='AI Skills Trending - AI / Agent Skill report generator')
+    ap.add_argument('--cli', action='store_true', help='run in the console (no GUI)')
+    ap.add_argument('--out-dir', default='',
+                    help='HTML output folder (defaults to the script folder)')
+    ap.add_argument('--boards', default='all-time,monthly,weekly,daily',
+                    help='comma-separated boards, e.g. all-time,daily')
+    ap.add_argument('--topn-ai', type=int, default=0,
+                    help='items to collect per board for AI (1-100, default 50)')
+    ap.add_argument('--topn-sk', type=int, default=0,
+                    help='items to collect per board for Agent Skill (1-100, default 50)')
+    ap.add_argument('--topn', type=int, default=0,
+                    help='set the per-board limit for both AI and Agent Skill')
     ap.add_argument('--only', choices=['all', 'skill', 'ai'], default='all',
-                    help='输出范围：all=全部（默认）｜skill=只输出 Skill 项目｜ai=只输出 AI 项目')
+                    help='output scope: all (default) | skill | ai')
     ap.add_argument('--token', default=None,
-                    help='GitHub Token（可选）。留空则用环境变量 GITHUB_TOKEN；'
-                         '填了可把检索限额从 10 提到 30 次/分钟')
+                    help='optional GitHub token. Falls back to the GITHUB_TOKEN environment '
+                         'variable; raises the search limit from 10 to 30 per minute')
     ap.add_argument('--check-token', action='store_true',
-                    help='只校验 Token 是否有效，然后退出')
+                    help='verify the token and exit')
     args = ap.parse_args()
     if args.check_token:
         set_token(args.token if args.token is not None else '')
         ok, msg = verify_token(args.token)
-        log(('✓ ' if ok else '✗ ') + msg)
+        log(('[ok] ' if ok else '[failed] ') + msg)
         sys.exit(0 if ok else 1)
     both = args.topn or 0
-    cfg = dict(boards=[b.strip() for b in args.boards.split(',') if b.strip() in ALL_BOARDS],
+    # Board names are matched case-insensitively, so all-time / All-Time / ALL-TIME
+    # all work on the command line.
+    _wanted = [b.strip().lower() for b in args.boards.split(',') if b.strip()]
+    _boards = [b for b in ALL_BOARDS if b.lower() in _wanted]
+    cfg = dict(boards=_boards,
                topn_ai=args.topn_ai or both or TOP_N,
                topn_sk=args.topn_sk or both or TOP_N,
                only='' if args.only == 'all' else args.only, outdir=args.out_dir,

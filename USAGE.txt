@@ -1,0 +1,126 @@
+AI Skills Trending - report generator - usage notes
+====================================================
+
+1. FIRST RUN (read this after copying the folder to another machine)
+--------------------------------------------------------------------
+
+1) You need Python 3.8 or newer installed.
+   Download: https://www.python.org/downloads/
+   During setup, tick "Add python.exe to PATH", otherwise the script cannot
+   find an interpreter.
+   Nothing needs to be pip installed; the program uses only the standard library.
+
+2) Double-click run_report.bat to start:
+   - Normal case: the GUI opens. Set your options, then click
+     "Fetch and generate report".
+   - If the system has no GUI toolkit (tkinter), the program falls back to
+     console mode automatically and opens the report when it finishes.
+   - If Python is missing, it prints the download link and pauses, so the
+     window does not vanish before you can read it.
+
+
+2. COMMON ERRORS
+----------------
+
+- 'xxx' is not recognized as an internal or external command
+  Usually the .bat was converted to LF line endings or given non-ASCII
+  comments by an editor or archiver, so cmd.exe treats a comment as a command.
+  This folder ships a fixed launcher: pure ASCII content, CRLF line endings.
+
+- The system cannot find the path specified
+  An older .bat hard-coded a Python path from a different machine
+  (C://Users//<name>//...), which does not exist after copying.
+  The current launcher probes instead: py -3 -> python -> Microsoft Store Python.
+
+- No window appears but the program is running
+  tkinter is missing (some trimmed Python builds). The program falls back to
+  console mode; this is expected.
+
+- Search failed: HTTP Error 403: rate limit exceeded
+  GitHub rate-limits search endpoints hard: an anonymous IP gets 10 requests
+  per minute, and going over returns 403. The program waits and retries
+  automatically, so this is not a crash, but the run gets slower.
+  Three things keep the impact small:
+    1) The gap between requests is 7.5s, and on 403 the program waits exactly
+       until the quota resets, using the reset time from the response header.
+    2) One failing endpoint no longer aborts the whole report; other boards
+       still get generated.
+    3) A token raises the limit from 10 to 30 per minute (recommended).
+  To use a token (once, about two minutes, free):
+    a. Sign in to GitHub and open https://github.com/settings/tokens
+    b. Generate new token -> Classic -> do not tick any scope
+       (read access to public data is enough) -> generate
+    c. Copy the token and paste it into the "GitHub Token" field in the GUI,
+       then click "Confirm". It takes effect immediately and shows the account
+       name. There is a "Get a token..." button that opens the page for you.
+    d. Alternative: set an environment variable named GITHUB_TOKEN
+       (This PC -> Properties -> Advanced system settings -> Environment
+       Variables -> new user variable).
+  The token is kept in memory for the current run only. It is never written
+  to disk and never uploaded.
+
+
+3. GUI OPTIONS
+--------------
+
+- Output folder
+  Where the HTML report is saved. Use "Browse..." to pick one. Defaults to the
+  folder containing the script.
+
+- Boards
+  All-time / Monthly / Weekly / Daily. Tick any combination.
+
+- Per-board limit
+  Set separately for AI and Agent Skill, 1-100 each.
+
+- Output scope
+  Everything            - the Agent Skill section and the AI section, shown
+                          separately
+  Skill projects only   - Agent Skill projects from both sections, merged and
+                          deduplicated into a single block
+  AI projects only      - the AI section with Agent Skill projects removed
+
+- GitHub Token
+  Optional. Paste a read-only token and click "Confirm" to verify it on the
+  spot and raise the search limit from 10 to 30 per minute. The field is masked
+  by default; tick "Show" to reveal it. Leaving it empty works fine, just
+  slower. An invalid token is reported at the start, so no time is wasted.
+
+  Report structure (there is no trend-analysis section):
+    Everything : 1.1 Agent Skill projects -> 1.2 Agent Skill project details
+                 -> 1.3 Other projects -> 1.4 Other project details
+    Skill only : 1.1 Skill projects -> 1.2 Skill project details
+    AI only    : 1.1 AI projects -> 1.2 AI project details
+
+
+4. COMMAND LINE (optional)
+--------------------------
+
+python github_trending_report.py --cli
+     --out-dir "D:/reports" --boards all-time,daily --topn-ai 20 --topn-sk 50 --only all|skill|ai
+     [--token ghp_xxx]         pass a GitHub token (optional, raises the limit)
+     [--check-token]           verify the token and exit
+
+Board names are matched case-insensitively, so all-time, All-Time and ALL-TIME
+all work.
+
+
+5. FILES
+--------
+
+github_trending_report.py   main program (GUI + console, standard library only)
+kb.json                     curated write-ups for 67 projects. Deleting it is
+                            fine; new projects then use auto-generated text
+run_report.bat              Windows launcher (probes for Python)
+USAGE.txt                   this file
+README.md                   repository overview
+
+
+6. NOTES
+--------
+
+- A run takes roughly 2 to 5 minutes, mostly waiting on GitHub rate limits.
+- An internet connection is required (github.com and api.github.com).
+- Report filenames carry a timestamp, so re-running never overwrites an
+  earlier report.
+- Data is fetched live, so star counts and rankings change every run.

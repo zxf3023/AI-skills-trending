@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 rem ============================================================
-rem  GitHub Trending AI/SKILL report generator - one-click launcher
+rem  AI Skills Trending - report generator - one-click launcher
 rem  Requirements: Python 3.8+  (https://www.python.org/downloads/)
 rem  Install tip: tick "Add python.exe to PATH" in the installer.
 rem  No extra pip packages needed (standard library only).
@@ -31,7 +31,7 @@ if not defined PY (
 )
 
 echo Python launcher: %PY%
-echo Starting GitHub Trending report generator...
+echo Starting the AI Skills Trending report generator...
 echo (If a window does not appear, the program falls back to console mode automatically.)
 %PY% "%~dp0github_trending_report.py"
 if errorlevel 1 (
