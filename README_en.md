@@ -1,8 +1,8 @@
 <h1 align="center">AI Skills Trending</h1>
 
 <p align="center">
-  <strong>See which AI and Agent Skill projects are actually trending, in one HTML report.</strong><br />
-  Pulls the GitHub boards, classifies every project, deduplicates, and writes a report you can read in five minutes.
+  <strong>See which AI and Agent Skill projects are trending, in one HTML report.</strong><br />
+  Pulls the GitHub boards, sorts every project into AI or Agent Skill, and writes a report with a note on what each one does.
 </p>
 
 <p align="center">
@@ -36,11 +36,11 @@
 
 ## What this is
 
-GitHub's trending boards mix everything together: model releases, agent runtimes, skill packs, plugins, and a long tail of unrelated projects. Working out which entries are worth your time takes a lot of scrolling.
+GitHub's trending boards put model releases and skill packs next to unrelated projects. Working out which entries are worth your time takes a lot of scrolling.
 
-AI Skills Trending does that pass for you. One run fetches the official GitHub Trending boards plus topic searches, sorts everything into **AI** and **Agent Skill**, deduplicates across boards, ranks by total stars, and renders a single HTML report where every project carries a link, a star count, and a plain-language note on what it does.
+AI Skills Trending does that pass for you. One run fetches the official Trending boards and topic searches, sorts each project into AI or Agent Skill, deduplicates across boards, and ranks by total stars. The output is a single HTML report where every project has a link, a star count and a note on what it does.
 
-Pure Python standard library. Nothing to `pip install`. Ships as a GUI and a CLI.
+The program needs only the Python standard library, so there is nothing to install, and it runs either as a GUI or from the command line.
 
 ---
 
@@ -115,7 +115,7 @@ python github_trending_report.py --cli \
 | **Skill projects only** | Agent Skill projects from both sections, merged and deduplicated into one block |
 | **AI projects only** | The AI section with Agent Skill projects removed |
 
-There is no trend-analysis section. The report is the tables and the write-ups.
+The report is the summary tables plus a write-up per project.
 
 ---
 
@@ -128,7 +128,7 @@ Every project gets a summary-table row and a detail card. Each card carries five
 | **What it is** | One line identifying the project |
 | **What it does** | A plain-language note on what you would actually use it for |
 | **What it solves** | The need it addresses |
-| **Why it matters** | Its standing or traction, with star figures |
+| **Why it matters** | Its position in the field, with star figures |
 | **Who it is for** | The people or teams it suits |
 
 Cards are tagged **Curated** or **Auto-generated**. `kb.json` holds hand-written entries for 67 projects; anything not in it gets generated text, clearly labelled so you know what to double-check.
@@ -137,24 +137,22 @@ Cards are tagged **Curated** or **Auto-generated**. `kb.json` holds hand-written
 
 ## GitHub token (optional, but recommended)
 
-GitHub rate-limits its search endpoints hard. Anonymous access allows **10 requests per minute per IP**, and going over returns `403 rate limit exceeded`. The program waits and retries rather than crashing, but the run gets noticeably slower.
+GitHub allows **10 search requests per minute per IP** without a token. Going over returns `403 rate limit exceeded`. The program waits and retries, so the run still finishes, but it takes longer.
 
-A read-only token raises the limit to **30 requests per minute** and typically saves one to two minutes per run.
+A read-only token raises the limit to **30 requests per minute**, which cuts the waiting.
 
 > [!NOTE]
 > The token needs **no scopes at all**. Read access to public data is enough. Do not tick anything on the generation page.
 
-**In the GUI:** paste the token into the **GitHub Token** field and click **Confirm**. It is verified on the spot and the account name is shown. The field is masked by default; tick **Show** to reveal it. The **Get a token...** button opens the generation page.
+**In the GUI:** paste the token into the **GitHub Token** field and click **Confirm**. The program checks it immediately and shows the account name. The field is masked by default; tick **Show** to reveal it. The **Get a token...** button opens the generation page.
 
 **Via environment variable:** set `GITHUB_TOKEN` (or `GH_TOKEN`) if you prefer to keep it out of the UI. This suits scripted or scheduled runs.
 
-The token lives in memory for the current run only. It is never written to disk and never uploaded.
+The token stays in memory for the current run only. It is never written to disk and never uploaded.
 
 ---
 
 ## Data method
-
-Worth knowing before you compare this report against something else:
 
 - The Trending **daily** board ranks by short-term star velocity, not total stars.
 - The monthly, weekly and daily lists are topped up with a date-window plus total-stars search, so they can differ from an in-extension velocity board.

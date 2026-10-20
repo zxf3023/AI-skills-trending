@@ -1,8 +1,8 @@
 <h1 align="center">AI Skills Trending</h1>
 
 <p align="center">
-  <strong>一份 HTML 报告，看清 GitHub 上真正在涨的 AI 与 Agent Skill 项目。</strong><br />
-  拉取榜单、逐个归类、跨榜去重，最后写成一份五分钟能读完的报告。
+  <strong>一份 HTML 报告，看清 GitHub 上正在涨的 AI 与 Agent Skill 项目。</strong><br />
+  拉取榜单、逐个归类、跨榜去重，写成一份带解读的 HTML 报告。
 </p>
 
 <p align="center">
@@ -36,11 +36,11 @@
 
 ## 这是什么
 
-GitHub 的 trending 榜单是混在一起的：模型发布、agent 运行时、技能包、插件，还有一大截跟主题无关的项目。想从中挑出值得看的，得翻很久。
+GitHub 的 trending 榜单里，模型发布、技能包和一堆无关项目排在一起。想从中挑出值得看的，得翻很久。
 
-AI Skills Trending 替你做完这一遍。跑一次就会拉取 GitHub 官方 Trending 榜单和话题检索结果，把项目分成 **AI** 与 **Agent Skill** 两类，跨榜去重，按总星排序，最后渲染成一份 HTML 报告：每个项目都带链接、星数，和一句人话说明它能干什么。
+AI Skills Trending 替你做完这一遍。跑一次就会拉取官方 Trending 榜单和话题检索结果，把项目分成 **AI** 与 **Agent Skill** 两类，跨榜去重，按总星排序。最后输出一份 HTML 报告，每个项目带链接、星数，和一句说明它能干什么的人话。
 
-纯 Python 标准库，不需要 `pip install` 任何东西。图形界面和命令行两种用法。
+程序只用 Python 标准库，不需要装任何东西，图形界面和命令行都能用。
 
 ---
 
@@ -117,7 +117,7 @@ python github_trending_report.py --cli \
 | **Skill projects only** | 两个版块的 Agent Skill 项目合并去重后单块输出 |
 | **AI projects only** | AI 版块剔除 Agent Skill 项目后的其余项目 |
 
-报告里没有趋势分析版块，只有表格和解读。
+报告就是汇总表，加上每个项目的解读。
 
 ---
 
@@ -130,7 +130,7 @@ python github_trending_report.py --cli \
 | **What it is** | 一句话说明这是什么项目 |
 | **What it does** | 通俗说明你会拿它干什么 |
 | **What it solves** | 它解决的需求 |
-| **Why it matters** | 它的位置或势头，带星数 |
+| **Why it matters** | 它在同类里的位置，带星数 |
 | **Who it is for** | 适合哪些人或团队 |
 
 卡片会标 **Curated** 或 **Auto-generated**。`kb.json` 收录了 67 个项目的人工解读；不在库里的项目会走自动生成，并明确标注，方便你判断哪些需要自己再核一遍。
@@ -139,9 +139,9 @@ python github_trending_report.py --cli \
 
 ## GitHub Token（可选，但推荐）
 
-GitHub 对检索类接口限流很严。未登录状态下每个 IP 每分钟只有 **10 次**，超了返回 `403 rate limit exceeded`。程序会等待并重试，不会崩，但整轮会明显变慢。
+未登录时，GitHub 给每个 IP 每分钟 **10 次**检索额度，超了返回 `403 rate limit exceeded`。程序会等待并重试，整轮照样能跑完，只是慢一些。
 
-一个只读 Token 能把限额提到 **每分钟 30 次**，通常能省一到两分钟。
+一个只读 Token 能把限额提到 **每分钟 30 次**，等待时间明显变短。
 
 > [!NOTE]
 > Token **不需要勾任何权限**。读取公开数据就够了，生成时不要勾选任何 scope。
@@ -155,8 +155,6 @@ Token 只保存在当前这次运行的内存里，不写文件、不上传。
 ---
 
 ## 数据口径
-
-跟别的报告对比之前，有几点值得知道：
 
 - Trending **日榜**按短期 star 增速排序，不是总星。
 - 月榜、周榜、日榜是「时间窗 + 总星」检索补足的，与扩展内的增速榜可能有差异。
