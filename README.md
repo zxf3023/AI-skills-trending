@@ -1,83 +1,91 @@
 <h1 align="center">AI Skills Trending</h1>
 
 <p align="center">
-  <strong>See which AI and Agent Skill projects are actually trending, in one HTML report.</strong><br />
-  Pulls the GitHub boards, classifies every project, deduplicates, and writes a report you can read in five minutes.
+  <strong>一份 HTML 报告，看清 GitHub 上真正在涨的 AI 与 Agent Skill 项目。</strong><br />
+  拉取榜单、逐个归类、跨榜去重，最后写成一份五分钟能读完的报告。
 </p>
 
 <p align="center">
-  <a href="#get-started"><strong>Get started</strong></a>
+  <a href="#快速开始"><strong>快速开始</strong></a>
   ·
-  <a href="#what-ends-up-in-the-report">Report contents</a>
+  <a href="#报告里有什么">报告内容</a>
   ·
-  <a href="#github-token-optional-but-recommended">GitHub token</a>
+  <a href="#github-token可选但推荐">GitHub Token</a>
   ·
-  <a href="#command-line">Command line</a>
+  <a href="#命令行">命令行</a>
   ·
-  <a href="#data-method">Data method</a>
+  <a href="#数据口径">数据口径</a>
   ·
-  <a href="#troubleshooting">Troubleshooting</a>
+  <a href="#故障排查">故障排查</a>
 </p>
 
 <p align="center">
-  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.8%2B-3776AB?logo=python&logoColor=white" alt="Python 3.8 or newer" /></a>
-  <img src="https://img.shields.io/badge/dependencies-none-2ea44f" alt="No dependencies" />
-  <img src="https://img.shields.io/badge/pip%20install-not%20required-2ea44f" alt="No pip install required" />
-  <img src="https://img.shields.io/badge/license-not%20specified-lightgrey" alt="License not specified" />
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.8%2B-3776AB?logo=python&logoColor=white" alt="Python 3.8 或更高" /></a>
+  <img src="https://img.shields.io/badge/dependencies-none-2ea44f" alt="无依赖" />
+  <img src="https://img.shields.io/badge/pip%20install-not%20required-2ea44f" alt="无需 pip 安装" />
+  <img src="https://img.shields.io/badge/license-not%20specified-lightgrey" alt="未指定许可证" />
 </p>
 
----
+<div align="center">
 
-## What this is
+中文 | [English](./README_en.md)
 
-GitHub's trending boards mix everything together: model releases, agent runtimes, skill packs, plugins, and a long tail of unrelated projects. Working out which entries are worth your time takes a lot of scrolling.
-
-AI Skills Trending does that pass for you. One run fetches the official GitHub Trending boards plus topic searches, sorts everything into **AI** and **Agent Skill**, deduplicates across boards, ranks by total stars, and renders a single HTML report where every project carries a link, a star count, and a plain-language note on what it does.
-
-Pure Python standard library. Nothing to `pip install`. Ships as a GUI and a CLI.
+</div>
 
 ---
 
-## How a run works
+## 这是什么
 
-| Step | What happens |
+GitHub 的 trending 榜单是混在一起的：模型发布、agent 运行时、技能包、插件，还有一大截跟主题无关的项目。想从中挑出值得看的，得翻很久。
+
+AI Skills Trending 替你做完这一遍。跑一次就会拉取 GitHub 官方 Trending 榜单和话题检索结果，把项目分成 **AI** 与 **Agent Skill** 两类，跨榜去重，按总星排序，最后渲染成一份 HTML 报告：每个项目都带链接、星数，和一句人话说明它能干什么。
+
+纯 Python 标准库，不需要 `pip install` 任何东西。图形界面和命令行两种用法。
+
+---
+
+## 一次运行做了什么
+
+| 步骤 | 动作 |
 |---|---|
-| **1. Fetch** | Pulls the official Trending daily, weekly and monthly boards |
-| **2. Expand** | Runs topic searches for the All-time, Monthly, Weekly and Daily boards, top N per board |
-| **3. Classify** | Sorts each project into the AI or Agent Skill section, deduplicates across boards, ranks by total stars |
-| **4. Render** | Writes the HTML report: summary tables plus a detail card per project |
+| **1. 拉取** | 拉取 GitHub 官方 Trending 的日榜、周榜、月榜 |
+| **2. 补足** | 用话题检索补齐总榜、月榜、周榜、日榜，每榜取前 N 名 |
+| **3. 归类** | 分入 AI 或 Agent Skill 版块，跨榜去重，按总星排序 |
+| **4. 渲染** | 写出 HTML 报告：汇总表加每个项目的详细卡片 |
 
-The All-time board comes from GitHub Search sorted by total stars. The monthly, weekly and daily boards combine the Trending page with a date-window search, because the Trending page has no pagination and stops at roughly 25 entries.
+总榜来自 GitHub Search 按总星排序。月榜、周榜、日榜是 Trending 页面加时间窗检索的组合，因为 Trending 页面没有分页，最多只到 25 条左右。
 
 ---
 
-## Get started
+## 快速开始
 
-### Requirements
+### 环境要求
 
-- Python 3.8 or newer ([download](https://www.python.org/downloads/))
-- Tick **Add python.exe to PATH** during installation
-- No third-party packages
+- Python 3.8 或更高版本（[下载](https://www.python.org/downloads/)）
+- 安装时勾选 **Add python.exe to PATH**
+- 不需要任何第三方库
 
-### Option 1: one click (Windows)
+### 方式一：一键启动（Windows）
 
-Double-click `run_report.bat`. The launcher probes for an interpreter in this order: `py -3`, then `python`, then the Microsoft Store build. If none is found it prints the download link and pauses.
+双击 `run_report.bat`。启动器按顺序探测解释器：`py -3` → `python` → 微软商店版。都没找到就打印下载地址并暂停，窗口不会一闪而过。
 
-### Option 2: the GUI
+### 方式二：图形界面
 
 ```bash
 python github_trending_report.py
 ```
 
-| Field | What it does |
+| 选项 | 作用 |
 |---|---|
-| Output folder | Where the HTML report is saved. Use **Browse...** to pick one |
-| Boards | All-time / Monthly / Weekly / Daily. Tick any combination |
-| Per-board limit | Set separately for AI and Agent Skill, 1-100 each |
+| Output folder | HTML 报告保存位置，可点 **Browse...** 选择 |
+| Boards | All-time / Monthly / Weekly / Daily，可任意勾选 |
+| Per-board limit | AI 与 Agent Skill 分别设置，各 1-100 |
 | Output scope | Everything / Skill projects only / AI projects only |
-| GitHub Token | Optional. Paste, then click **Confirm** to verify and activate it |
+| GitHub Token | 可选。粘贴后点 **Confirm** 校验并生效 |
 
-### Option 3: the command line
+> 界面与报告正文都是英文。项目从早期中文版迁移而来，程序与报告已统一为英文，文档提供中英双版。
+
+### 方式三：命令行
 
 ```bash
 python github_trending_report.py --cli \
@@ -88,108 +96,109 @@ python github_trending_report.py --cli \
     --token ghp_xxx
 ```
 
-| Flag | Meaning |
+| 参数 | 说明 |
 |---|---|
-| `--cli` | Run in the console, no GUI |
-| `--out-dir` | HTML output folder. Defaults to the script folder |
-| `--boards` | Comma-separated boards. Case-insensitive |
-| `--topn-ai` / `--topn-sk` | Items per board for AI / Agent Skill, 1-100 |
-| `--topn` | Sets both at once |
-| `--only` | `all`, `skill`, or `ai` |
-| `--token` | Optional GitHub token |
-| `--check-token` | Verify the token, then exit |
+| `--cli` | 命令行模式运行，不弹界面 |
+| `--out-dir` | HTML 输出目录，默认脚本所在目录 |
+| `--boards` | 榜单，逗号分隔，大小写不敏感 |
+| `--topn-ai` / `--topn-sk` | AI / Agent Skill 每榜数量，1-100 |
+| `--topn` | 同时设置两者 |
+| `--only` | `all`、`skill` 或 `ai` |
+| `--token` | 可选 GitHub Token |
+| `--check-token` | 只校验 Token 后退出 |
 
 ---
 
-## Output scope
+## 输出范围
 
-| Scope | What you get |
+| 范围 | 得到什么 |
 |---|---|
-| **Everything** (default) | 1.1 Agent Skill projects → 1.2 Agent Skill project details → 1.3 Other projects → 1.4 Other project details |
-| **Skill projects only** | Agent Skill projects from both sections, merged and deduplicated into one block |
-| **AI projects only** | The AI section with Agent Skill projects removed |
+| **Everything**（默认） | 1.1 Agent Skill 项目 → 1.2 Agent Skill 项目详细解读 → 1.3 其他项目 → 1.4 其他项目详细解读 |
+| **Skill projects only** | 两个版块的 Agent Skill 项目合并去重后单块输出 |
+| **AI projects only** | AI 版块剔除 Agent Skill 项目后的其余项目 |
 
-There is no trend-analysis section. The report is the tables and the write-ups.
+报告里没有趋势分析版块，只有表格和解读。
 
 ---
 
-## What ends up in the report
+## 报告里有什么
 
-Every project gets a summary-table row and a detail card. Each card carries five fields:
+每个项目都有一行汇总表记录，加一张详细卡片。卡片包含五个字段：
 
-| Field | Content |
+| 字段 | 内容 |
 |---|---|
-| **What it is** | One line identifying the project |
-| **What it does** | A plain-language note on what you would actually use it for |
-| **What it solves** | The need it addresses |
-| **Why it matters** | Its standing or traction, with star figures |
-| **Who it is for** | The people or teams it suits |
+| **What it is** | 一句话说明这是什么项目 |
+| **What it does** | 通俗说明你会拿它干什么 |
+| **What it solves** | 它解决的需求 |
+| **Why it matters** | 它的位置或势头，带星数 |
+| **Who it is for** | 适合哪些人或团队 |
 
-Cards are tagged **Curated** or **Auto-generated**. `kb.json` holds hand-written entries for 67 projects; anything not in it gets generated text, clearly labelled so you know what to double-check.
+卡片会标 **Curated** 或 **Auto-generated**。`kb.json` 收录了 67 个项目的人工解读；不在库里的项目会走自动生成，并明确标注，方便你判断哪些需要自己再核一遍。
 
 ---
 
-## GitHub token (optional, but recommended)
+## GitHub Token（可选，但推荐）
 
-GitHub rate-limits its search endpoints hard. Anonymous access allows **10 requests per minute per IP**, and going over returns `403 rate limit exceeded`. The program waits and retries rather than crashing, but the run gets noticeably slower.
+GitHub 对检索类接口限流很严。未登录状态下每个 IP 每分钟只有 **10 次**，超了返回 `403 rate limit exceeded`。程序会等待并重试，不会崩，但整轮会明显变慢。
 
-A read-only token raises the limit to **30 requests per minute** and typically saves one to two minutes per run.
+一个只读 Token 能把限额提到 **每分钟 30 次**，通常能省一到两分钟。
 
 > [!NOTE]
-> The token needs **no scopes at all**. Read access to public data is enough. Do not tick anything on the generation page.
+> Token **不需要勾任何权限**。读取公开数据就够了，生成时不要勾选任何 scope。
 
-**In the GUI:** paste the token into the **GitHub Token** field and click **Confirm**. It is verified on the spot and the account name is shown. The field is masked by default; tick **Show** to reveal it. The **Get a token...** button opens the generation page.
+**界面方式：** 把 Token 粘贴到 **GitHub Token** 一栏，点 **Confirm**，当场校验并显示账号名。输入框默认圆点遮蔽，勾 **Show** 可显示。**Get a token...** 按钮会直接打开生成页。
 
-**Via environment variable:** set `GITHUB_TOKEN` (or `GH_TOKEN`) if you prefer to keep it out of the UI. This suits scripted or scheduled runs.
+**环境变量方式：** 设 `GITHUB_TOKEN`（或 `GH_TOKEN`）。适合脚本或定时任务。
 
-The token lives in memory for the current run only. It is never written to disk and never uploaded.
-
----
-
-## Data method
-
-Worth knowing before you compare this report against something else:
-
-- The Trending **daily** board ranks by short-term star velocity, not total stars.
-- The monthly, weekly and daily lists are topped up with a date-window plus total-stars search, so they can differ from an in-extension velocity board.
-- The AI and SKILL pools are merged, deduplicated, then split into Agent Skill and everything else.
-- Agent Skill classification is deliberately strict: a project lands in that section only with skill or plugin evidence in its name or description, or an entry in the curated knowledge base. Topic tags alone never decide it.
-- Star counts and rankings are fetched live, so they change on every run.
+Token 只保存在当前这次运行的内存里，不写文件、不上传。
 
 ---
 
-## Files
+## 数据口径
 
-| File | Purpose |
+跟别的报告对比之前，有几点值得知道：
+
+- Trending **日榜**按短期 star 增速排序，不是总星。
+- 月榜、周榜、日榜是「时间窗 + 总星」检索补足的，与扩展内的增速榜可能有差异。
+- AI 与 SKILL 两个池子会先合并、去重，再拆成 Agent Skill 与其他两部分。
+- Agent Skill 的判定刻意从严：只有名称或简介里出现 skill / plugin 证据，或被人工库收录，才归入该版块。话题标签单独不足以决定归类。
+- 星数与排名是实时抓取的，每次运行都会变化。
+
+---
+
+## 文件说明
+
+| 文件 | 用途 |
 |---|---|
-| `github_trending_report.py` | Main program: GUI and console, standard library only |
-| `kb.json` | Curated write-ups for 67 projects. Safe to delete; new projects then use auto-generated text |
-| `run_report.bat` | Windows launcher. Probes for Python, pure ASCII, CRLF line endings |
-| `USAGE.txt` | Usage notes, including an error-reference table |
-| `README.md` | This file |
+| `github_trending_report.py` | 主程序：图形界面 + 命令行，纯标准库 |
+| `kb.json` | 67 个项目的人工解读。删掉也能跑，新项目改走自动生成 |
+| `run_report.bat` | Windows 启动器。自动探测 Python，纯 ASCII，CRLF 换行 |
+| `USAGE.txt` | 英文使用说明，含报错对照表 |
+| `README.md` | 本文件（中文） |
+| `README_en.md` | [English version](./README_en.md) |
 
 ---
 
-## Troubleshooting
+## 故障排查
 
-| Symptom | Cause and fix |
+| 现象 | 原因与处理 |
 |---|---|
-| `'xxx' is not recognized as an internal or external command` | The `.bat` picked up LF line endings or non-ASCII comments from an editor or archiver, so cmd.exe ran a comment as a command. Use the shipped launcher: pure ASCII, CRLF endings |
-| `The system cannot find the path specified` | An old launcher hard-coded a Python path from another machine. The current one probes instead |
-| No window appears, but the program is running | `tkinter` is missing from your Python build. The program falls back to console mode automatically |
-| `403 rate limit exceeded` | Anonymous search quota exhausted. The program waits and retries; add a token to raise the limit to 30 per minute |
-| `401` on every search | The token is invalid or expired. Click **Confirm** in the GUI to re-check, or clear the field to fall back to the anonymous limit |
+| `'xxx' 不是内部或外部命令` | `.bat` 被编辑器或压缩工具改成了 LF 换行，或混入了非 ASCII 注释，导致 cmd 把注释当命令执行。用仓库里的启动器，它是纯 ASCII + CRLF |
+| `系统找不到指定的路径` | 旧版启动器写死了别台机器的 Python 路径。现在改为自动探测 |
+| 没弹窗口但程序在跑 | 你的 Python 缺 `tkinter`。程序会自动转命令行模式，属正常现象 |
+| `403 rate limit exceeded` | 匿名检索额度用尽。程序会等待重试；加 Token 可提到每分钟 30 次 |
+| 每次检索都报 `401` | Token 无效或已过期。点界面上的 **Confirm** 重新校验，或清空该栏回退到匿名限额 |
 
 ---
 
-## Notes
+## 说明
 
-- A full run takes roughly 2 to 5 minutes, most of it spent waiting on rate limits.
-- An internet connection is required (`github.com` and `api.github.com`).
-- Report filenames carry a timestamp, so re-running never overwrites an earlier report.
+- 完整跑一轮约 2-5 分钟，大部分时间花在等限流间隔。
+- 需要联网（`github.com` 与 `api.github.com`）。
+- 报告文件名带时间戳，重复运行不会覆盖旧报告。
 
 ---
 
-## License
+## 许可
 
-No license is specified for this repository. It is published for reference and personal use.
+本仓库未指定许可证，仅供参考与个人使用。
